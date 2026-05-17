@@ -2,7 +2,41 @@
 $page_title = 'Company Settings';
 $page_icon = 'building';
 require_once 'config.php';
+
+// Start session if not started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+// Check if user is admin - if not, show access denied
+if (($_SESSION['role'] ?? '') !== 'admin') {
+    // Instead of redirect, we'll show the page but the modal will pop up
+    // The modal will be shown via JavaScript in footer
+    $access_denied = true;
+} else {
+    $access_denied = false;
+}
+
 require_once 'header.php';
+
+// If access denied, show message and stop
+if ($access_denied) {
+    echo '<div class="alert alert-danger text-center p-5">
+            <i class="fas fa-lock fa-3x mb-3 d-block"></i>
+            <h4>Access Denied!</h4>
+            <p>You do not have permission to access this page.</p>
+            <p>Please contact the system administrator.</p>
+            <a href="index.php" class="btn btn-primary mt-3">Go to Dashboard</a>
+          </div>';
+    require_once 'footer.php';
+    exit;
+}
 
 // Create settings table if not exists
 $pdo->exec("CREATE TABLE IF NOT EXISTS company_settings (

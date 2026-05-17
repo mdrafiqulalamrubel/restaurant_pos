@@ -1,5 +1,5 @@
 <?php
-// header.php - NO SPACES OR CHARACTERS BEFORE THIS LINE
+// header.php - At the very top
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -35,6 +35,9 @@ if (!$company) {
         'receipt_footer' => 'Thank you for your business!'
     ];
 }
+
+// Check if user is admin
+$is_admin = ($_SESSION['role'] ?? '') === 'admin';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,7 +58,6 @@ if (!$company) {
             min-height: 100vh;
         }
         
-        /* Sidebar Styles */
         .sidebar {
             min-width: 280px;
             max-width: 280px;
@@ -165,7 +167,6 @@ if (!$company) {
             text-align: center;
         }
         
-        /* Closable Section Headers */
         .nav-section {
             padding: 15px 20px 5px;
             font-size: 0.7rem;
@@ -214,7 +215,6 @@ if (!$company) {
             width: 100%;
         }
         
-        /* Top Bar with Logout Button */
         .top-bar {
             background: white;
             padding: 15px 20px;
@@ -279,7 +279,6 @@ if (!$company) {
             transform: translateY(-2px);
         }
         
-        /* Footer */
         .footer {
             text-align: center;
             padding: 20px;
@@ -288,6 +287,18 @@ if (!$company) {
             border-radius: 10px;
             color: #666;
             font-size: 12px;
+        }
+        
+        /* Access Denied Modal */
+        .modal-access-denied .modal-content {
+            border-radius: 15px;
+            text-align: center;
+            padding: 20px;
+        }
+        .modal-access-denied .modal-icon {
+            font-size: 4rem;
+            color: #dc3545;
+            margin-bottom: 15px;
         }
         
         @media (max-width: 768px) {
@@ -333,6 +344,12 @@ if (!$company) {
             max-width: 120px;
             max-height: 50px;
             margin-bottom: 10px;
+        }
+        
+        .disabled-link {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -459,7 +476,8 @@ if (!$company) {
             </div>
         </div>
         
-        <!-- SETTINGS Section -->
+        <!-- SETTINGS Section - Only visible to Admin -->
+        <?php if ($is_admin): ?>
         <div class="nav-section" onclick="toggleSection(this)">
             <span><i class="fas fa-cog"></i> SETTINGS</span>
             <i class="fas fa-chevron-down toggle-icon"></i>
@@ -476,6 +494,7 @@ if (!$company) {
                 </a>
             </div>
         </div>
+        <?php endif; ?>
     </div>
     
     <!-- Main Content -->
