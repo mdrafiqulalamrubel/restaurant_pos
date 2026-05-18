@@ -377,6 +377,9 @@ $total = $sale['total'];
     <a href="transactions.php" class="action-btn back" style="background: #6c757d;">
         <i class="fas fa-list"></i> All Sales
     </a>
+    <a href="token_print.php?sale_id=<?= $id ?>&type=both" class="btn btn-warning">
+        <i class="fas fa-ticket-alt"></i> Print Token
+    </a>
 </div>
 
 <script>

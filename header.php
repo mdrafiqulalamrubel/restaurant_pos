@@ -475,6 +475,67 @@ $is_admin = ($_SESSION['role'] ?? '') === 'admin';
                 </a>
             </div>
         </div>
+
+       <!-- TOKENS Section -->
+        <div class="nav-section" onclick="toggleSection(this)">
+            <span><i class="fas fa-ticket-alt"></i> TOKENS</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="nav-section-content">
+            <div class="nav-item">
+                <a href="select_sale_for_token.php" class="nav-link <?= $current_page == 'select_sale_for_token.php' ? 'active' : '' ?>">
+                    <i class="fas fa-hand-pointer"></i> <span>Select Sale & Print</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="token_dashboard.php" class="nav-link <?= $current_page == 'token_dashboard.php' ? 'active' : '' ?>">
+                    <i class="fas fa-chalkboard"></i> <span>Kitchen Display</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- RECIPE MANAGEMENT Section -->
+        <div class="nav-section" onclick="toggleSection(this)">
+            <span><i class="fas fa-receipt"></i> RECIPE MGT</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="nav-section-content">
+            <div class="nav-item">
+                <a href="raw_materials.php" class="nav-link <?= $current_page == 'raw_materials.php' ? 'active' : '' ?>">
+                    <i class="fas fa-boxes"></i> <span>Raw Materials</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="recipes.php" class="nav-link <?= $current_page == 'recipes.php' ? 'active' : '' ?>">
+                    <i class="fas fa-utensils"></i> <span>Recipes</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="production.php" class="nav-link <?= $current_page == 'production.php' ? 'active' : '' ?>">
+                    <i class="fas fa-industry"></i> <span>Production</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- ACCOUNTING Section -->
+        <div class="nav-section" onclick="toggleSection(this)">
+            <span><i class="fas fa-chart-line"></i> ACCOUNTING</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="nav-section-content">
+            <div class="nav-item">
+                <a href="cash_management.php" class="nav-link <?= $current_page == 'cash_management.php' ? 'active' : '' ?>">
+                    <i class="fas fa-money-bill-wave"></i> <span>Cash Management</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="profit_loss.php" class="nav-link <?= $current_page == 'profit_loss.php' ? 'active' : '' ?>">
+                    <i class="fas fa-chart-line"></i> <span>Profit & Loss</span>
+                </a>
+            </div>
+        </div>
+
+
         
         <!-- SETTINGS Section - Only visible to Admin -->
         <?php if ($is_admin): ?>

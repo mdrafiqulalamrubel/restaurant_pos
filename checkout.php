@@ -1,35 +1,55 @@
 <?php
+// checkout.php - Fixed to redirect to token printing
 require_once 'config.php';
-require_once 'functions.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['items'])) {
-    die('Invalid request');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: pos.php');
+    exit;
 }
 
-$items = [];
-$customer_id = $_POST['customer_id'] ?? 0;
+$cart_data = json_decode($_POST['cart_data'], true);
 $payment_method = $_POST['payment_method'] ?? 'cash';
-$discount = $_POST['discount'] ?? 0;
 
-foreach ($_POST['items'] as $i => $data) {
-    $item = [
-        'id' => $data['id'],
-        'qty' => $data['qty'],
-        'price' => $data['price'],
-        'booking_required' => $data['booking_required'] ?? 0,
-        'bk_date' => $data['bk_date'] ?? '',
-        'bk_time' => $data['bk_time'] ?? '',
-        'bk_duration' => $data['bk_duration'] ?? 1,
-        'bk_notes' => $data['bk_notes'] ?? ''
-    ];
-    $items[] = $item;
+if (empty($cart_data)) {
+    header('Location: pos.php');
+    exit;
 }
 
 try {
-    $saleId = saveSale($items, $customer_id, $payment_method, $discount);
-    header('Location: invoice.php?id=' . $saleId);
+    $pdo->beginTransaction();
+    
+    $subtotal = 0;
+    foreach ($cart_data as $item) {
+        $subtotal += $item['price'] * $item['qty'];
+    }
+    $company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
+    $tax_rate = $company['tax_rate'] ?? 10;
+    $tax = $subtotal * ($tax_rate / 100);
+    $total = $subtotal + $tax;
+    
+    $stmt = $pdo->prepare("INSERT INTO sales (total, payment_method, tax) VALUES (?, ?, ?)");
+    $stmt->execute([$total, $payment_method, $tax]);
+    $sale_id = $pdo->lastInsertId();
+    
+    foreach ($cart_data as $item) {
+        $stmt = $pdo->prepare("INSERT INTO sale_items (sale_id, item_id, qty, unit_price) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$sale_id, $item['id'], $item['qty'], $item['price']]);
+        
+        if ($item['booking_required'] && !empty($item['bk_date'])) {
+            $sale_item_id = $pdo->lastInsertId();
+            $stmt = $pdo->prepare("INSERT INTO bookings (sale_item_id, booking_date, booking_time, duration) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$sale_item_id, $item['bk_date'], $item['bk_time'], 1]);
+        }
+    }
+    
+    $pdo->commit();
+    
+    // After successful checkout, redirect to token selection page
+    header("Location: select_sale_for_token.php");
     exit;
+    
 } catch (Exception $e) {
-    die('Checkout failed: ' . $e->getMessage());
+    $pdo->rollBack();
+    die("Error: " . $e->getMessage());
 }
 ?>

@@ -4,6 +4,9 @@ $page_icon = 'utensils';
 require_once 'config.php';
 require_once 'header.php';
 
+// Check admin access for edit/add
+$is_admin = ($_SESSION['role'] === 'admin');
+
 // Handle item addition/editing
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $name = $_POST['name'];
@@ -14,6 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $booking_required = isset($_POST['booking_required']) ? 1 : 0;
     $booking_type = $_POST['booking_type'] ?? null;
     $manufacturer_id = $_POST['manufacturer_id'] ?: null;
+    $current_stock = $_POST['current_stock'] ?? 0;
+    $min_stock_level = $_POST['min_stock_level'] ?? 0;
+    $is_producible = isset($_POST['is_producible']) ? 1 : 0;
     
     // Handle image upload
     $image_path = '';
@@ -31,17 +37,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
     
     if ($_POST['action'] === 'add') {
-        $stmt = $pdo->prepare("INSERT INTO items (name, unit_price, cost_price, category, description, image, booking_required, booking_type, manufacturer_id) VALUES (?,?,?,?,?,?,?,?,?)");
-        $stmt->execute([$name, $unit_price, $cost_price, $category, $description, $image_path, $booking_required, $booking_type, $manufacturer_id]);
+        $stmt = $pdo->prepare("INSERT INTO items (name, unit_price, cost_price, category, description, image, booking_required, booking_type, manufacturer_id, current_stock, min_stock_level, is_producible) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->execute([$name, $unit_price, $cost_price, $category, $description, $image_path, $booking_required, $booking_type, $manufacturer_id, $current_stock, $min_stock_level, $is_producible]);
         $success = "Item added successfully!";
     } elseif ($_POST['action'] === 'edit') {
         $id = $_POST['item_id'];
         if ($image_path) {
-            $stmt = $pdo->prepare("UPDATE items SET name=?, unit_price=?, cost_price=?, category=?, description=?, image=?, booking_required=?, booking_type=?, manufacturer_id=? WHERE id=?");
-            $stmt->execute([$name, $unit_price, $cost_price, $category, $description, $image_path, $booking_required, $booking_type, $manufacturer_id, $id]);
+            $stmt = $pdo->prepare("UPDATE items SET name=?, unit_price=?, cost_price=?, category=?, description=?, image=?, booking_required=?, booking_type=?, manufacturer_id=?, current_stock=?, min_stock_level=?, is_producible=? WHERE id=?");
+            $stmt->execute([$name, $unit_price, $cost_price, $category, $description, $image_path, $booking_required, $booking_type, $manufacturer_id, $current_stock, $min_stock_level, $is_producible, $id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE items SET name=?, unit_price=?, cost_price=?, category=?, description=?, booking_required=?, booking_type=?, manufacturer_id=? WHERE id=?");
-            $stmt->execute([$name, $unit_price, $cost_price, $category, $description, $booking_required, $booking_type, $manufacturer_id, $id]);
+            $stmt = $pdo->prepare("UPDATE items SET name=?, unit_price=?, cost_price=?, category=?, description=?, booking_required=?, booking_type=?, manufacturer_id=?, current_stock=?, min_stock_level=?, is_producible=? WHERE id=?");
+            $stmt->execute([$name, $unit_price, $cost_price, $category, $description, $booking_required, $booking_type, $manufacturer_id, $current_stock, $min_stock_level, $is_producible, $id]);
         }
         $success = "Item updated successfully!";
     }
@@ -67,6 +73,10 @@ if (isset($_GET['edit'])) {
     $stmt->execute([$_GET['edit']]);
     $editItem = $stmt->fetch(PDO::FETCH_ASSOC);
 }
+
+$low_stock_items = array_filter($items, function($item) {
+    return $item['current_stock'] <= $item['min_stock_level'] && $item['min_stock_level'] > 0;
+});
 ?>
 
 <style>
@@ -74,27 +84,12 @@ if (isset($_GET['edit'])) {
         transition: transform 0.3s;
         margin-bottom: 20px;
     }
-    .item-card:hover {
-        transform: translateY(-5px);
-    }
-    .item-image {
-        height: 150px;
-        object-fit: cover;
-    }
-    .form-card {
-        background: white;
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .success-msg {
-        background: #d4edda;
-        color: #155724;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 15px;
-    }
+    .item-card:hover { transform: translateY(-5px); }
+    .item-image { height: 150px; object-fit: cover; }
+    .form-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+    .stock-low { background: #dc3545; color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; }
+    .stock-ok { background: #28a745; color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; }
 </style>
 
 <?php if (isset($success)): ?>
@@ -119,12 +114,23 @@ if (isset($_GET['edit'])) {
                 
                 <div class="row">
                     <div class="col-md-6 mb-2">
-                        <label>Price *</label>
+                        <label>Selling Price *</label>
                         <input type="number" step="0.01" name="unit_price" class="form-control" value="<?= $editItem['unit_price'] ?? '' ?>" required>
                     </div>
                     <div class="col-md-6 mb-2">
                         <label>Cost Price</label>
                         <input type="number" step="0.01" name="cost_price" class="form-control" value="<?= $editItem['cost_price'] ?? 0 ?>">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label>Current Stock</label>
+                        <input type="number" step="0.01" name="current_stock" class="form-control" value="<?= $editItem['current_stock'] ?? 0 ?>">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label>Min Stock Level</label>
+                        <input type="number" step="0.01" name="min_stock_level" class="form-control" value="<?= $editItem['min_stock_level'] ?? 0 ?>">
                     </div>
                 </div>
                 
@@ -165,22 +171,29 @@ if (isset($_GET['edit'])) {
                         </select>
                     </div>
                     <div class="col-md-6 mb-2">
-                        <label>&nbsp;</label>
+                        <div class="form-check mt-4">
+                            <input type="checkbox" name="is_producible" class="form-check-input" value="1" <?= ($editItem['is_producible'] ?? 1) ? 'checked' : '' ?>>
+                            <label class="form-check-label">Can be Produced</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-2">
                         <div class="form-check">
                             <input type="checkbox" name="booking_required" class="form-check-input" value="1" <?= ($editItem['booking_required'] ?? 0) ? 'checked' : '' ?>>
                             <label class="form-check-label">Booking Required</label>
                         </div>
                     </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label>Booking Type</label>
-                    <select name="booking_type" class="form-control">
-                        <option value="">None</option>
-                        <option value="table" <?= ($editItem['booking_type'] ?? '') == 'table' ? 'selected' : '' ?>>Table</option>
-                        <option value="hall" <?= ($editItem['booking_type'] ?? '') == 'hall' ? 'selected' : '' ?>>Hall</option>
-                        <option value="catering" <?= ($editItem['booking_type'] ?? '') == 'catering' ? 'selected' : '' ?>>Catering</option>
-                    </select>
+                    <div class="col-md-6 mb-2">
+                        <label>Booking Type</label>
+                        <select name="booking_type" class="form-control">
+                            <option value="">None</option>
+                            <option value="table" <?= ($editItem['booking_type'] ?? '') == 'table' ? 'selected' : '' ?>>Table</option>
+                            <option value="hall" <?= ($editItem['booking_type'] ?? '') == 'hall' ? 'selected' : '' ?>>Hall</option>
+                            <option value="catering" <?= ($editItem['booking_type'] ?? '') == 'catering' ? 'selected' : '' ?>>Catering</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <button type="submit" class="btn btn-primary w-100">
@@ -198,6 +211,12 @@ if (isset($_GET['edit'])) {
     <div class="col-md-8">
         <div class="form-card">
             <h5><i class="fas fa-list"></i> Menu Items (<?= count($items) ?> items)</h5>
+            <?php if (!empty($low_stock_items)): ?>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <strong>Low Stock Alert:</strong> <?= count($low_stock_items) ?> item(s) are below minimum stock level.
+                </div>
+            <?php endif; ?>
             <div class="row">
                 <?php foreach ($items as $item): ?>
                     <div class="col-md-6 col-lg-4">
@@ -213,15 +232,25 @@ if (isset($_GET['edit'])) {
                                 <h6 class="card-title"><?= htmlspecialchars($item['name']) ?></h6>
                                 <p class="card-text small text-muted"><?= htmlspecialchars($item['description'] ?? 'No description') ?></p>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-primary fw-bold">€<?= number_format($item['unit_price'], 2) ?></span>
+                                    <span class="text-primary fw-bold"><?= number_format($item['unit_price'], 2) ?></span>
                                     <span class="badge bg-secondary"><?= $item['category'] ?? 'Uncategorized' ?></span>
+                                </div>
+                                <div class="mt-2">
+                                    <small>Stock: <?= number_format($item['current_stock'], 2) ?></small>
+                                    <?php if ($item['current_stock'] <= $item['min_stock_level'] && $item['min_stock_level'] > 0): ?>
+                                        <span class="stock-low ms-2">Low Stock</span>
+                                    <?php endif; ?>
                                 </div>
                                 <?php if ($item['booking_required']): ?>
                                     <span class="badge bg-warning mt-2"><i class="fas fa-calendar"></i> Booking Item</span>
                                 <?php endif; ?>
+                                <?php if ($item['is_producible']): ?>
+                                    <span class="badge bg-info mt-2"><i class="fas fa-industry"></i> Producible</span>
+                                <?php endif; ?>
                             </div>
                             <div class="card-footer bg-transparent">
                                 <a href="?edit=<?= $item['id'] ?>" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Edit</a>
+                                <a href="recipe_for_item.php?item_id=<?= $item['id'] ?>" class="btn btn-sm btn-success"><i class="fas fa-receipt"></i> Recipe</a>
                                 <a href="?delete=<?= $item['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete this item?')"><i class="fas fa-trash"></i> Delete</a>
                             </div>
                         </div>

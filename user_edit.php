@@ -3,54 +3,8 @@ $page_title = 'Edit User';
 $page_icon = 'user-edit';
 require_once 'config.php';
 
-// Check if current user is admin - BEFORE any output
-session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: index.php');
-    exit;
-}
-
-// Process form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ... form processing code ...
-    if ($success) {
-        header('Location: users.php');
-        exit;
-    }
-}
-
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
-// Check if user is admin - if not, show access denied
-if (($_SESSION['role'] ?? '') !== 'admin') {
-    // Instead of redirect, we'll show the page but the modal will pop up
-    // The modal will be shown via JavaScript in footer
-    $access_denied = true;
-} else {
-    $access_denied = false;
-}
-
-require_once 'header.php';
-
-// If access denied, show message and stop
-if ($access_denied) {
-    echo '<div class="alert alert-danger text-center p-5">
-            <i class="fas fa-lock fa-3x mb-3 d-block"></i>
-            <h4>Access Denied!</h4>
-            <p>You do not have permission to access this page.</p>
-            <p>Please contact the system administrator.</p>
-            <a href="index.php" class="btn btn-primary mt-3">Go to Dashboard</a>
-          </div>';
-    require_once 'footer.php';
-    exit;
-}
-
 // Check if current user is admin
-if ($_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: index.php');
     exit;
 }
@@ -91,17 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $success = "User updated successfully!";
     }
     
-    // Log activity
+    // Refresh user data
     if (empty($error)) {
-        $stmt = $pdo->prepare("INSERT INTO user_activity_log (user_id, action, details, ip_address) VALUES (?, 'user_updated', ?, ?)");
-        $stmt->execute([$_SESSION['user_id'], "Updated user: {$user['username']}", $_SERVER['REMOTE_ADDR']]);
-        
-        // Refresh user data
         $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
         $stmt->execute([$user_id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
+
+require_once 'header.php';
 ?>
 
 <style>
@@ -114,6 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-radius: 15px;
         padding: 30px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .password-toggle {
+        cursor: pointer;
+    }
+    .password-toggle:hover {
+        background: #f8f9fa;
     }
 </style>
 
@@ -154,7 +112,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <div class="mb-3">
                 <label>New Password (leave blank to keep current)</label>
-                <input type="password" name="password" class="form-control">
+                <div class="input-group">
+                    <input type="password" name="password" id="password" class="form-control">
+                    <span class="input-group-text password-toggle" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </span>
+                </div>
                 <small class="text-muted">Minimum 6 characters</small>
             </div>
             
@@ -190,5 +153,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </div>
+
+<script>
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+</script>
 
 <?php require_once 'footer.php'; ?>

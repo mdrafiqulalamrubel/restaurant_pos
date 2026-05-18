@@ -3,54 +3,8 @@ $page_title = 'Add New User';
 $page_icon = 'user-plus';
 require_once 'config.php';
 
-// Check if current user is admin - BEFORE any output
-session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: index.php');
-    exit;
-}
-
-// Process form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ... form processing code ...
-    if ($success) {
-        header('Location: users.php');
-        exit;
-    }
-}
-
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
-// Check if user is admin - if not, show access denied
-if (($_SESSION['role'] ?? '') !== 'admin') {
-    // Instead of redirect, we'll show the page but the modal will pop up
-    // The modal will be shown via JavaScript in footer
-    $access_denied = true;
-} else {
-    $access_denied = false;
-}
-
-require_once 'header.php';
-
-// If access denied, show message and stop
-if ($access_denied) {
-    echo '<div class="alert alert-danger text-center p-5">
-            <i class="fas fa-lock fa-3x mb-3 d-block"></i>
-            <h4>Access Denied!</h4>
-            <p>You do not have permission to access this page.</p>
-            <p>Please contact the system administrator.</p>
-            <a href="index.php" class="btn btn-primary mt-3">Go to Dashboard</a>
-          </div>';
-    require_once 'footer.php';
-    exit;
-}
-
 // Check if current user is admin
-if ($_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: index.php');
     exit;
 }
@@ -85,18 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $pdo->prepare("INSERT INTO users (username, full_name, email, phone, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([$username, $full_name, $email, $phone, $password_hash, $role, $is_active]);
-            $user_id = $pdo->lastInsertId();
-            
-            // Log activity
-            $stmt = $pdo->prepare("INSERT INTO user_activity_log (user_id, action, details, ip_address) VALUES (?, 'user_created', ?, ?)");
-            $stmt->execute([$_SESSION['user_id'], "Created user: $username", $_SERVER['REMOTE_ADDR']]);
-            
             $success = "User created successfully!";
             // Clear form
             $_POST = [];
         }
     }
 }
+
+require_once 'header.php';
 ?>
 
 <style>
@@ -110,9 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         padding: 30px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    .password-hint {
-        font-size: 0.8rem;
-        color: #6c757d;
+    .password-toggle {
+        cursor: pointer;
+    }
+    .password-toggle:hover {
+        background: #f8f9fa;
     }
 </style>
 
@@ -154,12 +106,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label>Password *</label>
-                    <input type="password" name="password" class="form-control" required>
-                    <small class="password-hint">Minimum 6 characters</small>
+                    <div class="input-group">
+                        <input type="password" name="password" id="password" class="form-control" required>
+                        <span class="input-group-text password-toggle" onclick="togglePassword('password', 'toggleIcon1')">
+                            <i class="fas fa-eye" id="toggleIcon1"></i>
+                        </span>
+                    </div>
+                    <small class="text-muted">Minimum 6 characters</small>
                 </div>
                 <div class="col-md-6 mb-3">
                     <label>Confirm Password *</label>
-                    <input type="password" name="confirm_password" class="form-control" required>
+                    <div class="input-group">
+                        <input type="password" name="confirm_password" id="confirm_password" class="form-control" required>
+                        <span class="input-group-text password-toggle" onclick="togglePassword('confirm_password', 'toggleIcon2')">
+                            <i class="fas fa-eye" id="toggleIcon2"></i>
+                        </span>
+                    </div>
                 </div>
             </div>
             
@@ -174,8 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </select>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label>&nbsp;</label>
-                    <div class="form-check mt-2">
+                    <div class="form-check mt-4">
                         <input type="checkbox" name="is_active" class="form-check-input" value="1" checked>
                         <label class="form-check-label">Active Account</label>
                     </div>
@@ -199,5 +160,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </div>
+
+<script>
+function togglePassword(fieldId, iconId) {
+    const passwordInput = document.getElementById(fieldId);
+    const toggleIcon = document.getElementById(iconId);
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+</script>
 
 <?php require_once 'footer.php'; ?>

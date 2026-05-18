@@ -400,6 +400,27 @@ function renderCart() {
     updateTotals();
 }
 
+function checkout() {
+    if (cart.length === 0) {
+        alert('Cart is empty!');
+        return;
+    }
+    
+    // Validate booking items
+    for (let item of cart) {
+        if (item.booking_required && (!item.bk_date || !item.bk_time)) {
+            alert(`Please set booking date and time for ${item.name}`);
+            return;
+        }
+    }
+    
+    if (confirm('Complete this sale? You will be able to print token afterward.')) {
+        document.getElementById('cartData').value = JSON.stringify(cart);
+        document.getElementById('paymentMethod').value = currentPayment;
+        document.getElementById('checkoutForm').submit();
+    }
+}
+
 function changeQty(idx, delta) {
     let newQty = cart[idx].qty + delta;
     if (newQty >= 0.5) {
@@ -475,6 +496,18 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// After successful sale, show token options
+function afterCheckout(saleId) {
+    // Show token printing options
+    if (confirm('Sale completed! Print token for kitchen?')) {
+        window.open('token_print.php?sale_id=' + saleId + '&type=kitchen', '_blank');
+    }
+    if (confirm('Print customer token?')) {
+        window.open('token_print.php?sale_id=' + saleId + '&type=customer', '_blank');
+    }
+    window.location.href = 'invoice.php?id=' + saleId;
+}
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'F12') {
         e.preventDefault();
@@ -485,6 +518,8 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+
 </script>
 
 <?php require_once 'footer.php'; ?>
