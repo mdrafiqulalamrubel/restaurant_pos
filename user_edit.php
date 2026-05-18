@@ -3,10 +3,27 @@ $page_title = 'Edit User';
 $page_icon = 'user-edit';
 require_once 'config.php';
 
-// Check if current user is admin
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: index.php');
+// Debug - Uncomment to see what's happening
+// echo "Session ID: " . session_id() . "<br>";
+// echo "User ID: " . ($_SESSION['user_id'] ?? 'not set') . "<br>";
+// echo "Role: " . ($_SESSION['role'] ?? 'not set') . "<br>";
+// exit;
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
     exit;
+}
+
+// Check if current user is admin - Allow access for admin role only
+// Also allow if user is editing their own profile (optional)
+if ($_SESSION['role'] !== 'admin') {
+    // If not admin, check if editing own profile
+    $edit_id = $_GET['id'] ?? 0;
+    if ($edit_id != $_SESSION['user_id']) {
+        header('Location: index.php');
+        exit;
+    }
 }
 
 $user_id = $_GET['id'] ?? 0;
@@ -124,12 +141,15 @@ require_once 'header.php';
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label>Role</label>
-                    <select name="role" class="form-control">
+                    <select name="role" class="form-control" <?= ($user['id'] == $_SESSION['user_id'] && $_SESSION['role'] !== 'admin') ? 'disabled' : '' ?>>
                         <option value="staff" <?= $user['role'] == 'staff' ? 'selected' : '' ?>>Staff</option>
                         <option value="cashier" <?= $user['role'] == 'cashier' ? 'selected' : '' ?>>Cashier</option>
                         <option value="manager" <?= $user['role'] == 'manager' ? 'selected' : '' ?>>Manager</option>
                         <option value="admin" <?= $user['role'] == 'admin' ? 'selected' : '' ?>>Admin</option>
                     </select>
+                    <?php if ($user['id'] == $_SESSION['user_id'] && $_SESSION['role'] !== 'admin'): ?>
+                        <small class="text-muted">You cannot change your own role</small>
+                    <?php endif; ?>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="form-check mt-4">
@@ -141,7 +161,7 @@ require_once 'header.php';
             
             <?php if ($user['id'] == $_SESSION['user_id']): ?>
                 <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i> You are editing your own account. Be careful changing your role.
+                    <i class="fas fa-exclamation-triangle"></i> You are editing your own account.
                 </div>
             <?php endif; ?>
             

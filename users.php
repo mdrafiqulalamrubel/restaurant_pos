@@ -2,19 +2,23 @@
 $page_title = 'User Management';
 $page_icon = 'users-cog';
 require_once 'config.php';
-require_once 'access_check.php';
 
-// If access denied, show error and exit
-if ($access_denied) {
-    require_once 'header.php';
-    echo '<div class="alert alert-danger text-center p-5">
-            <i class="fas fa-lock fa-3x mb-3 d-block"></i>
-            <h4>Access Denied!</h4>
-            <p>You do not have permission to access this page.</p>
-            <p>Please contact the system administrator.</p>
-            <a href="index.php" class="btn btn-primary mt-3">Go to Dashboard</a>
-          </div>';
-    require_once 'footer.php';
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+// Check if current user is admin - with debug output
+if ($_SESSION['role'] !== 'admin') {
+    // Instead of silent redirect, show error message for debugging
+    if (isset($_GET['debug'])) {
+        echo "Your role is: " . ($_SESSION['role'] ?? 'NOT SET') . "<br>";
+        echo "User ID: " . ($_SESSION['user_id'] ?? 'NOT SET') . "<br>";
+        echo "<a href='debug_session.php'>Run Debug</a>";
+        exit;
+    }
+    header('Location: index.php');
     exit;
 }
 
@@ -37,12 +41,21 @@ if (isset($_GET['toggle_status']) && isset($_GET['id'])) {
 require_once 'header.php';
 
 $users = $pdo->query("SELECT * FROM users ORDER BY role, username")->fetchAll(PDO::FETCH_ASSOC);
-$role_counts = $pdo->query("SELECT role, COUNT(*) as count FROM users GROUP BY role")->fetchAll(PDO::FETCH_ASSOC);
+
+// Calculate role counts properly
+$admin_count = 0;
+$manager_count = 0;
+$staff_count = 0;
+foreach ($users as $user) {
+    if ($user['role'] == 'admin') $admin_count++;
+    elseif ($user['role'] == 'manager') $manager_count++;
+    else $staff_count++;
+}
+
 $company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
 $currency = $company['currency'] ?? '€';
 ?>
 
-<!-- Rest of your users.php HTML content... -->
 <style>
     .stats-card {
         background: white;
@@ -51,6 +64,15 @@ $currency = $company['currency'] ?? '€';
         margin-bottom: 20px;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .stats-card i {
+        font-size: 2rem;
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+    .stats-card h3 {
+        font-size: 2rem;
+        margin: 10px 0;
     }
     .role-badge {
         padding: 4px 12px;
@@ -68,29 +90,29 @@ $currency = $company['currency'] ?? '€';
 <div class="row">
     <div class="col-md-3">
         <div class="stats-card">
-            <i class="fas fa-users fa-2x text-primary mb-2 d-block"></i>
+            <i class="fas fa-users"></i>
             <h3><?= count($users) ?></h3>
             <div>Total Users</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card">
-            <i class="fas fa-user-shield fa-2x text-danger mb-2 d-block"></i>
-            <h3><?= array_sum(array_column(array_filter($role_counts, function($r) { return $r['role'] == 'admin'; }), 'count')) ?></h3>
+            <i class="fas fa-user-shield"></i>
+            <h3><?= $admin_count ?></h3>
             <div>Administrators</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card">
-            <i class="fas fa-user-tie fa-2x text-warning mb-2 d-block"></i>
-            <h3><?= array_sum(array_column(array_filter($role_counts, function($r) { return $r['role'] == 'manager'; }), 'count')) ?></h3>
+            <i class="fas fa-user-tie"></i>
+            <h3><?= $manager_count ?></h3>
             <div>Managers</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card">
-            <i class="fas fa-user fa-2x text-success mb-2 d-block"></i>
-            <h3><?= array_sum(array_column(array_filter($role_counts, function($r) { return in_array($r['role'], ['staff', 'cashier']); }), 'count')) ?></h3>
+            <i class="fas fa-user"></i>
+            <h3><?= $staff_count ?></h3>
             <div>Staff & Cashiers</div>
         </div>
     </div>
@@ -107,7 +129,9 @@ $currency = $company['currency'] ?? '€';
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
-                    <tr><th>ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+                    <tr>
+                        <th>ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th>
+                    </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($users as $user): ?>
