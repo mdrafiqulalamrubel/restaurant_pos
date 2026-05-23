@@ -1,5 +1,5 @@
 <?php
-// checkout.php - Fixed to redirect to token printing
+// checkout.php - Process Checkout with session support
 require_once 'config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -9,6 +9,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $cart_data = json_decode($_POST['cart_data'], true);
 $payment_method = $_POST['payment_method'] ?? 'cash';
+$customer_id = $_POST['customer_id'] ?? 0;
+$discount = $_POST['discount'] ?? 0;
+$table_id = $_POST['table_id'] ?? null;
+$session_id = $_POST['session_id'] ?? null;
 
 if (empty($cart_data)) {
     header('Location: pos.php');
@@ -24,11 +28,11 @@ try {
     }
     $company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
     $tax_rate = $company['tax_rate'] ?? 10;
-    $tax = $subtotal * ($tax_rate / 100);
-    $total = $subtotal + $tax;
+    $tax = ($subtotal - $discount) * ($tax_rate / 100);
+    $total = $subtotal - $discount + $tax;
     
-    $stmt = $pdo->prepare("INSERT INTO sales (total, payment_method, tax) VALUES (?, ?, ?)");
-    $stmt->execute([$total, $payment_method, $tax]);
+    $stmt = $pdo->prepare("INSERT INTO sales (total, customer_id, payment_method, discount, tax, session_id) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$total, $customer_id ?: null, $payment_method, $discount, $tax, $session_id]);
     $sale_id = $pdo->lastInsertId();
     
     foreach ($cart_data as $item) {
@@ -42,10 +46,24 @@ try {
         }
     }
     
+    if ($table_id) {
+        $stmt = $pdo->prepare("INSERT INTO table_orders (table_id, sale_id, status) VALUES (?, ?, 'active')");
+        $stmt->execute([$table_id, $sale_id]);
+        $stmt = $pdo->prepare("UPDATE dining_tables SET status = 'occupied', current_order_id = ? WHERE id = ?");
+        $stmt->execute([$sale_id, $table_id]);
+    }
+    
+    $today = date('Y-m-d');
+    $stmt = $pdo->prepare("SELECT COALESCE(MAX(token_number), 0) + 1 FROM order_tokens WHERE token_date = ?");
+    $stmt->execute([$today]);
+    $token_num = $stmt->fetchColumn();
+    $stmt = $pdo->prepare("INSERT INTO order_tokens (sale_id, token_number, token_date, status) VALUES (?, ?, ?, 'pending')");
+    $stmt->execute([$sale_id, $token_num, $today]);
+    
     $pdo->commit();
     
-    // After successful checkout, redirect to token selection page
-    header("Location: select_sale_for_token.php");
+    // Redirect to POS with success
+    header("Location: pos.php?success=1&sale_id=$sale_id&token=$token_num&total=$total&payment=$payment_method");
     exit;
     
 } catch (Exception $e) {

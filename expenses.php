@@ -4,7 +4,14 @@ $page_icon = 'money-bill-wave';
 require_once 'config.php';
 require_once 'header.php';
 
-// Create expenses table
+// Get company settings for currency
+$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
+if (!$company) {
+    $company = ['currency' => '€', 'currency_code' => 'EUR'];
+}
+$currency = $company['currency'];
+
+// Create expenses table if not exists
 $pdo->exec("CREATE TABLE IF NOT EXISTS expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     expense_date DATE NOT NULL,
@@ -12,6 +19,8 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS expenses (
     description TEXT,
     amount DECIMAL(10,2) NOT NULL,
     payment_method VARCHAR(20) DEFAULT 'cash',
+    branch_id INT NULL,
+    session_id INT NULL,
     receipt VARCHAR(255),
     created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -20,8 +29,10 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS expenses (
 // Add expense
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'add') {
-        $stmt = $pdo->prepare("INSERT INTO expenses (expense_date, category, description, amount, payment_method) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['expense_date'], $_POST['category'], $_POST['description'], $_POST['amount'], $_POST['payment_method']]);
+        $branch_id = $_SESSION['branch_id'] ?? null;
+        $session_id = $_SESSION['session_id'] ?? null;
+        $stmt = $pdo->prepare("INSERT INTO expenses (expense_date, category, description, amount, payment_method, branch_id, session_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['expense_date'], $_POST['category'], $_POST['description'], $_POST['amount'], $_POST['payment_method'], $branch_id, $session_id]);
         $success = "Expense added successfully!";
     } elseif ($_POST['action'] === 'delete') {
         $stmt = $pdo->prepare("DELETE FROM expenses WHERE id = ?");
@@ -35,26 +46,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $from_date = $_GET['from_date'] ?? date('Y-m-01');
 $to_date = $_GET['to_date'] ?? date('Y-m-d');
 
-$expenses = $pdo->prepare("SELECT * FROM expenses WHERE expense_date BETWEEN ? AND ? ORDER BY expense_date DESC, id DESC");
+// Get expenses with branch filter
+$branch_condition = "";
+if (!isset($_GET['show_all']) && $_SESSION['role'] !== 'admin') {
+    $branch_condition = "AND branch_id = " . intval($_SESSION['branch_id']);
+}
+
+$expenses = $pdo->prepare("SELECT * FROM expenses WHERE expense_date BETWEEN ? AND ? $branch_condition ORDER BY expense_date DESC, id DESC");
 $expenses->execute([$from_date, $to_date]);
 $expense_list = $expenses->fetchAll(PDO::FETCH_ASSOC);
 
 // Get totals
 $total_expenses = array_sum(array_column($expense_list, 'amount'));
 
-// Get sales total
-$sales_total = $pdo->prepare("SELECT COALESCE(SUM(total), 0) FROM sales WHERE DATE(created_at) BETWEEN ? AND ?");
+// Get sales total with branch filter
+$sales_total = $pdo->prepare("SELECT COALESCE(SUM(total), 0) FROM sales WHERE DATE(created_at) BETWEEN ? AND ? $branch_condition");
 $sales_total->execute([$from_date, $to_date]);
 $total_sales = $sales_total->fetchColumn();
 
 $net_profit = $total_sales - $total_expenses;
 
 // Get cash balance
-$cash_sales = $pdo->prepare("SELECT COALESCE(SUM(total), 0) FROM sales WHERE DATE(created_at) BETWEEN ? AND ? AND payment_method = 'cash'");
+$cash_sales = $pdo->prepare("SELECT COALESCE(SUM(total), 0) FROM sales WHERE DATE(created_at) BETWEEN ? AND ? AND payment_method = 'cash' $branch_condition");
 $cash_sales->execute([$from_date, $to_date]);
 $cash_income = $cash_sales->fetchColumn();
 
-$cash_expenses = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE expense_date BETWEEN ? AND ? AND payment_method = 'cash'");
+$cash_expenses = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE expense_date BETWEEN ? AND ? AND payment_method = 'cash' $branch_condition");
 $cash_expenses->execute([$from_date, $to_date]);
 $cash_out = $cash_expenses->fetchColumn();
 
@@ -83,26 +100,28 @@ $expense_categories = ['Rent', 'Utilities', 'Salary', 'Food Cost', 'Marketing', 
     <div class="col-md-3">
         <div class="stats-card income">
             <h6>Total Sales</h6>
-            <div class="stats-number"><?= $settings['currency'] ?? '€' ?><?= number_format($total_sales, 2) ?></div>
+            <div class="stats-number"><?= $currency ?><?= number_format($total_sales, 2) ?></div>
             <small><?= date('d M Y', strtotime($from_date)) ?> - <?= date('d M Y', strtotime($to_date)) ?></small>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card expense">
             <h6>Total Expenses</h6>
-            <div class="stats-number"><?= $settings['currency'] ?? '€' ?><?= number_format($total_expenses, 2) ?></div>
+            <div class="stats-number"><?= $currency ?><?= number_format($total_expenses, 2) ?></div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card profit">
             <h6>Net Profit</h6>
-            <div class="stats-number"><?= $settings['currency'] ?? '€' ?><?= number_format($net_profit, 2) ?></div>
+            <div class="stats-number <?= $net_profit >= 0 ? 'text-white' : 'text-danger' ?>">
+                <?= $currency ?><?= number_format($net_profit, 2) ?>
+            </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card balance">
             <h6>Cash Balance</h6>
-            <div class="stats-number"><?= $settings['currency'] ?? '€' ?><?= number_format($cash_balance, 2) ?></div>
+            <div class="stats-number"><?= $currency ?><?= number_format($cash_balance, 2) ?></div>
         </div>
     </div>
 </div>
@@ -143,7 +162,7 @@ $expense_categories = ['Rent', 'Utilities', 'Salary', 'Food Cost', 'Marketing', 
                     </div>
                     
                     <div class="mb-2">
-                        <label>Amount</label>
+                        <label>Amount (<?= $currency ?>)</label>
                         <input type="number" name="amount" class="form-control" step="0.01" required>
                     </div>
                     
@@ -197,7 +216,7 @@ $expense_categories = ['Rent', 'Utilities', 'Salary', 'Food Cost', 'Marketing', 
                                 <td><?= date('d-m-Y', strtotime($exp['expense_date'])) ?></td>
                                 <td><?= $exp['category'] ?></td>
                                 <td><?= htmlspecialchars($exp['description'] ?? '-') ?></td>
-                                <td class="text-danger fw-bold"><?= $settings['currency'] ?? '€' ?><?= number_format($exp['amount'], 2) ?></td>
+                                <td class="text-danger fw-bold"><?= $currency ?><?= number_format($exp['amount'], 2) ?></td>
                                 <td><?= ucfirst($exp['payment_method']) ?></td>
                                 <td>
                                     <form method="post" style="display:inline" onsubmit="return confirm('Delete this expense?')">
@@ -215,7 +234,7 @@ $expense_categories = ['Rent', 'Utilities', 'Salary', 'Food Cost', 'Marketing', 
                         <tfoot>
                             <tr class="table-dark">
                                 <th colspan="3">Total Expenses</th>
-                                <th colspan="3"><?= $settings['currency'] ?? '€' ?><?= number_format($total_expenses, 2) ?></th>
+                                <th colspan="3"><?= $currency ?><?= number_format($total_expenses, 2) ?></th>
                             </tr>
                         </tfoot>
                     </table>

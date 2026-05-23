@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm_password = $_POST['confirm_password'];
     $role = $_POST['role'];
     $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $branch_id = $_POST['branch_id'] ?? null;
+    $branch_access = $_POST['branch_access'] ?? [];
     
     // Validation
     if (empty($username) || empty($password)) {
@@ -37,8 +39,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Username already exists";
         } else {
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO users (username, full_name, email, phone, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$username, $full_name, $email, $phone, $password_hash, $role, $is_active]);
+            $stmt = $pdo->prepare("INSERT INTO users (username, full_name, email, phone, password_hash, role, is_active, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$username, $full_name, $email, $phone, $password_hash, $role, $is_active, $branch_id]);
+            $user_id = $pdo->lastInsertId();
+            
+            // Add branch access permissions
+            if ($role === 'admin') {
+                // Admin gets access to all branches
+                $all_branches = $pdo->query("SELECT id FROM branches WHERE status = 'active'")->fetchAll();
+                foreach ($all_branches as $branch) {
+                    $stmt = $pdo->prepare("INSERT INTO user_branch_access (user_id, branch_id) VALUES (?, ?)");
+                    $stmt->execute([$user_id, $branch['id']]);
+                }
+            } elseif (!empty($branch_access)) {
+                // Add selected branch access
+                foreach ($branch_access as $ba) {
+                    $stmt = $pdo->prepare("INSERT INTO user_branch_access (user_id, branch_id) VALUES (?, ?)");
+                    $stmt->execute([$user_id, $ba]);
+                }
+            } else {
+                // Add default branch access
+                $stmt = $pdo->prepare("INSERT INTO user_branch_access (user_id, branch_id) VALUES (?, ?)");
+                $stmt->execute([$user_id, $branch_id]);
+            }
+            
             $success = "User created successfully!";
             // Clear form
             $_POST = [];
@@ -47,11 +71,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 require_once 'header.php';
+
+$branches = $pdo->query("SELECT id, name FROM branches WHERE status = 'active' ORDER BY name")->fetchAll();
 ?>
 
 <style>
     .user-form {
-        max-width: 600px;
+        max-width: 650px;
         margin: 0 auto;
     }
     .form-card {
@@ -65,6 +91,9 @@ require_once 'header.php';
     }
     .password-toggle:hover {
         background: #f8f9fa;
+    }
+    .branch-select-multiple {
+        min-height: 100px;
     }
 </style>
 
@@ -128,7 +157,7 @@ require_once 'header.php';
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label>Role</label>
-                    <select name="role" class="form-control">
+                    <select name="role" id="roleSelect" class="form-control" onchange="toggleBranchFields()">
                         <option value="staff" <?= ($_POST['role'] ?? '') == 'staff' ? 'selected' : '' ?>>Staff</option>
                         <option value="cashier" <?= ($_POST['role'] ?? '') == 'cashier' ? 'selected' : '' ?>>Cashier</option>
                         <option value="manager" <?= ($_POST['role'] ?? '') == 'manager' ? 'selected' : '' ?>>Manager</option>
@@ -143,13 +172,40 @@ require_once 'header.php';
                 </div>
             </div>
             
+            <!-- Primary Branch Assignment -->
+            <div class="mb-3" id="primaryBranchDiv">
+                <label>Primary Branch</label>
+                <select name="branch_id" class="form-control">
+                    <option value="">-- Select Branch --</option>
+                    <?php foreach ($branches as $b): ?>
+                        <option value="<?= $b['id'] ?>" <?= ($_POST['branch_id'] ?? '') == $b['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($b['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small class="text-muted">User will be assigned to this branch by default</small>
+            </div>
+            
+            <!-- Additional Branch Access (for non-admin users) -->
+            <div class="mb-3" id="branchAccessDiv">
+                <label>Additional Branch Access (Hold Ctrl to select multiple)</label>
+                <select name="branch_access[]" class="form-control branch-select-multiple" multiple size="4">
+                    <?php foreach ($branches as $b): ?>
+                        <option value="<?= $b['id'] ?>">
+                            <?= htmlspecialchars($b['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small class="text-muted">User will have access to these branches as well. Admin has access to all branches by default.</small>
+            </div>
+            
             <div class="alert alert-info">
                 <i class="fas fa-info-circle"></i> 
                 <strong>Role Permissions:</strong><br>
-                - <strong>Admin:</strong> Full access to everything<br>
-                - <strong>Manager:</strong> Can manage inventory, view reports<br>
-                - <strong>Cashier:</strong> Can process sales, view customers<br>
-                - <strong>Staff:</strong> Basic POS access only
+                - <strong>Admin:</strong> Full access to everything, all branches<br>
+                - <strong>Manager:</strong> Can manage inventory, view reports for assigned branches<br>
+                - <strong>Cashier:</strong> Can process sales, view customers for assigned branch<br>
+                - <strong>Staff:</strong> Basic POS access only for assigned branch
             </div>
             
             <button type="submit" class="btn btn-primary w-100">
@@ -176,6 +232,25 @@ function togglePassword(fieldId, iconId) {
         toggleIcon.classList.add('fa-eye');
     }
 }
+
+function toggleBranchFields() {
+    const role = document.getElementById('roleSelect').value;
+    const primaryDiv = document.getElementById('primaryBranchDiv');
+    const accessDiv = document.getElementById('branchAccessDiv');
+    
+    if (role === 'admin') {
+        primaryDiv.style.display = 'none';
+        accessDiv.style.display = 'none';
+    } else {
+        primaryDiv.style.display = 'block';
+        accessDiv.style.display = 'block';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleBranchFields();
+});
 </script>
 
 <?php require_once 'footer.php'; ?>

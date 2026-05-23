@@ -1,4 +1,6 @@
 <?php
+// functions.php - Complete with session support
+
 function getItems() {
     global $pdo;
     return $pdo->query("SELECT * FROM items WHERE active=1 ORDER BY category, name")->fetchAll(PDO::FETCH_ASSOC);
@@ -11,7 +13,7 @@ function getItem($id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-function saveSale($items, $customer_id = 0, $payment_method = 'cash', $discount = 0) {
+function saveSale($items, $customer_id = 0, $payment_method = 'cash', $discount = 0, $session_id = null) {
     global $pdo;
     $pdo->beginTransaction();
     try {
@@ -20,12 +22,14 @@ function saveSale($items, $customer_id = 0, $payment_method = 'cash', $discount 
         $tax = ($subtotal - $discount) * 0.10;
         $total = $subtotal - $discount + $tax;
         
-        // For now, assume full payment (no due)
         $paid_amount = $total;
         $due_amount = 0;
         
-        $stmt = $pdo->prepare("INSERT INTO sales (total, customer_id, payment_method, discount, tax, paid_amount, due_amount) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$total, $customer_id ?: null, $payment_method, $discount, $tax, $paid_amount, $due_amount]);
+        // Get current branch from session
+        $branch_id = $_SESSION['branch_id'] ?? null;
+        
+        $stmt = $pdo->prepare("INSERT INTO sales (total, customer_id, payment_method, discount, tax, paid_amount, due_amount, branch_id, session_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$total, $customer_id ?: null, $payment_method, $discount, $tax, $paid_amount, $due_amount, $branch_id, $session_id]);
         $saleId = $pdo->lastInsertId();
 
         foreach ($items as $item) {
