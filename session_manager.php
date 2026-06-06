@@ -13,6 +13,13 @@ $user_id = $_SESSION['user_id'];
 $branch_id = $_SESSION['branch_id'];
 $is_admin = ($_SESSION['role'] === 'admin');
 
+// Verify user exists in database
+$stmt = $pdo->prepare("SELECT id FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+if (!$stmt->fetch()) {
+    die("Invalid user. Please login again.");
+}
+
 // Check for active session - MUST be before any output
 $stmt = $pdo->prepare("
     SELECT * FROM pos_sessions 
@@ -26,6 +33,16 @@ $active_session = $stmt->fetch();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_session'])) {
     $opening_balance = $_POST['opening_balance'] ?? 0;
     $session_token = bin2hex(random_bytes(16));
+    
+    // Check if branch exists
+    $stmt = $pdo->prepare("SELECT id FROM branches WHERE id = ?");
+    $stmt->execute([$branch_id]);
+    if (!$stmt->fetch()) {
+        // Create default branch if not exists
+        $pdo->exec("INSERT INTO branches (id, name, code, status) VALUES (1, 'Main Branch', 'MB001', 'active') ON DUPLICATE KEY UPDATE name=name");
+        $branch_id = 1;
+        $_SESSION['branch_id'] = 1;
+    }
     
     $stmt = $pdo->prepare("
         INSERT INTO pos_sessions (user_id, branch_id, session_token, opening_balance, opening_time) 
