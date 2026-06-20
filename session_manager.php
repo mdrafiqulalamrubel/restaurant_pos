@@ -10,14 +10,19 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$branch_id = $_SESSION['branch_id'];
-$is_admin = ($_SESSION['role'] === 'admin');
+$branch_id = $_SESSION['branch_id'] ?? 1;
+$is_admin = ($_SESSION['role'] ?? '') === 'admin';
 
 // Verify user exists in database
-$stmt = $pdo->prepare("SELECT id FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT id, username FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
-if (!$stmt->fetch()) {
-    die("Invalid user. Please login again.");
+$user = $stmt->fetch();
+
+if (!$user) {
+    // User doesn't exist, logout
+    session_destroy();
+    header('Location: login.php');
+    exit;
 }
 
 // Check for active session - MUST be before any output

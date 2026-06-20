@@ -1,5 +1,5 @@
 <?php
-// config.php - Database configuration with branch functions
+// config.php - Complete with proper error handling
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -25,28 +25,35 @@ if (session_status() === PHP_SESSION_NONE) {
 if (isset($_SESSION['user_id'])) {
     try {
         // Get user's default branch
-        $stmt = $pdo->prepare("SELECT u.branch_id FROM users u WHERE u.id = ?");
+        $stmt = $pdo->prepare("SELECT u.branch_id, u.role FROM users u WHERE u.id = ?");
         $stmt->execute([$_SESSION['user_id']]);
-        $user_branch = $stmt->fetch();
+        $user_data = $stmt->fetch();
         
-        if (!isset($_SESSION['branch_id']) || empty($_SESSION['branch_id'])) {
-            $_SESSION['branch_id'] = $user_branch['branch_id'] ?? 1;
-        }
-        
-        // For admin, also ensure they have branch access
-        if ($_SESSION['role'] === 'admin') {
-            // Check if admin has any branch access
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM user_branch_access WHERE user_id = ?");
-            $stmt->execute([$_SESSION['user_id']]);
-            $has_access = $stmt->fetchColumn();
+        if ($user_data) {
+            // Set role from database if not set in session
+            if (!isset($_SESSION['role'])) {
+                $_SESSION['role'] = $user_data['role'] ?? 'staff';
+            }
             
-            if ($has_access == 0) {
-                // Give admin access to all branches
-                $stmt = $pdo->prepare("
-                    INSERT INTO user_branch_access (user_id, branch_id)
-                    SELECT ?, b.id FROM branches b WHERE b.status = 'active'
-                ");
+            if (!isset($_SESSION['branch_id']) || empty($_SESSION['branch_id'])) {
+                $_SESSION['branch_id'] = $user_data['branch_id'] ?? 1;
+            }
+            
+            // For admin, also ensure they have branch access
+            if ($_SESSION['role'] === 'admin') {
+                // Check if admin has any branch access
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM user_branch_access WHERE user_id = ?");
                 $stmt->execute([$_SESSION['user_id']]);
+                $has_access = $stmt->fetchColumn();
+                
+                if ($has_access == 0) {
+                    // Give admin access to all branches
+                    $stmt = $pdo->prepare("
+                        INSERT INTO user_branch_access (user_id, branch_id)
+                        SELECT ?, b.id FROM branches b WHERE b.status = 'active'
+                    ");
+                    $stmt->execute([$_SESSION['user_id']]);
+                }
             }
         }
     } catch (PDOException $e) {
@@ -88,7 +95,6 @@ if (!function_exists('canAccessBranch')) {
             $stmt->execute([$user_id, $branch_id]);
             return $stmt->fetchColumn() > 0;
         } catch (PDOException $e) {
-            // If table doesn't exist, admin can access
             return true;
         }
     }
