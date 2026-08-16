@@ -41,9 +41,9 @@ $journals = $stmt->fetchAll();
     <a href="acc_journal_add.php" class="btn btn-primary">+ New Journal Entry</a>
 </div>
 
-<div class="card" style="padding:0">
-  <div class="table-wrap">
-    <table>
+<div class="card form-card" style="padding:20px">
+  <div class="table-responsive">
+    <table class="table table-hover table-striped">
       <thead>
         <tr>
           <th>Date</th>

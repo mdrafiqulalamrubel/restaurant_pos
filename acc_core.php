@@ -40,12 +40,7 @@ if (!function_exists('display_flash')) {
     }
 }
 
-if (!function_exists('format_currency')) {
-    function format_currency($amount) {
-        $amount = (float)($amount ?? 0);
-        return number_format($amount, 2);
-    }
-}
+
 
 // Inject legacy CSS for the accounting pages
 echo '<style>
@@ -133,11 +128,6 @@ if (!function_exists('fmt_date')) {
     }
 }
 
-if (!function_exists('money')) {
-    function money($amount) {
-        return '$' . format_currency($amount);
-    }
-}
 
 if (!function_exists('acc_branch_sql')) {
     function acc_branch_sql($alias = 'j') {

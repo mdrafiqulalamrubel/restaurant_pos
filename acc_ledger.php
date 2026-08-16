@@ -88,16 +88,16 @@ if ($account_id > 0) {
 </div>
 
 <?php if ($account): ?>
-<div class="card" style="padding:0">
-    <div style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:flex-start;">
+<div class="card form-card" style="padding:20px;">
+    <div style="border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:flex-start;">
         <div>
             <h3 style="margin:0;"><?= h($account['name']) ?> (<?= h($account['code']) ?>)</h3>
             <p style="margin:5px 0 0; color:#666;">Type: <?= h($account['type']) ?></p>
         </div>
         <button onclick="window.print()" class="btn btn-outline no-print">🖨️ Print Ledger</button>
     </div>
-    <div class="table-wrap">
-        <table>
+    <div class="table-responsive">
+        <table class="table table-hover table-striped">
             <thead>
                 <tr>
                     <th>Date</th>

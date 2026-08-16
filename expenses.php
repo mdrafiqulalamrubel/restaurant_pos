@@ -4,6 +4,9 @@ $page_icon = 'money-bill-wave';
 require_once 'config.php';
 require_once 'header.php';
 
+require_once 'acc_core.php';
+require_once 'accounting.php';
+
 // Get company settings for currency
 $company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
 if (!$company) {
@@ -33,10 +36,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $session_id = $_SESSION['session_id'] ?? null;
         $stmt = $pdo->prepare("INSERT INTO expenses (expense_date, category, description, amount, payment_method, branch_id, session_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$_POST['expense_date'], $_POST['category'], $_POST['description'], $_POST['amount'], $_POST['payment_method'], $branch_id, $session_id]);
+        $expense_id = $pdo->lastInsertId();
+        
+        // Record in accounting system
+        acc_record_expense($expense_id, $_POST['amount'], $_POST['category'], $_POST['payment_method']);
+        
         $success = "Expense added successfully!";
     } elseif ($_POST['action'] === 'delete') {
         $stmt = $pdo->prepare("DELETE FROM expenses WHERE id = ?");
         $stmt->execute([$_POST['id']]);
+        
+        // Remove from accounting system
+        $stmt2 = $pdo->prepare("DELETE FROM acc_journals WHERE reference = ?");
+        $stmt2->execute(['EXP-' . $_POST['id']]);
+        
         header('Location: expenses.php');
         exit;
     }
@@ -100,28 +113,28 @@ $expense_categories = ['Rent', 'Utilities', 'Salary', 'Food Cost', 'Marketing', 
     <div class="col-md-3">
         <div class="stats-card income">
             <h6>Total Sales</h6>
-            <div class="stats-number"><?= $currency ?><?= number_format($total_sales, 2) ?></div>
+            <div class="stats-number"><?= money($total_sales) ?></div>
             <small><?= date('d M Y', strtotime($from_date)) ?> - <?= date('d M Y', strtotime($to_date)) ?></small>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card expense">
             <h6>Total Expenses</h6>
-            <div class="stats-number"><?= $currency ?><?= number_format($total_expenses, 2) ?></div>
+            <div class="stats-number"><?= money($total_expenses) ?></div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card profit">
             <h6>Net Profit</h6>
             <div class="stats-number <?= $net_profit >= 0 ? 'text-white' : 'text-danger' ?>">
-                <?= $currency ?><?= number_format($net_profit, 2) ?>
+                <?= money($net_profit) ?>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-card balance">
             <h6>Cash Balance</h6>
-            <div class="stats-number"><?= $currency ?><?= number_format($cash_balance, 2) ?></div>
+            <div class="stats-number"><?= money($cash_balance) ?></div>
         </div>
     </div>
 </div>
@@ -216,7 +229,7 @@ $expense_categories = ['Rent', 'Utilities', 'Salary', 'Food Cost', 'Marketing', 
                                 <td><?= date('d-m-Y', strtotime($exp['expense_date'])) ?></td>
                                 <td><?= $exp['category'] ?></td>
                                 <td><?= htmlspecialchars($exp['description'] ?? '-') ?></td>
-                                <td class="text-danger fw-bold"><?= $currency ?><?= number_format($exp['amount'], 2) ?></td>
+                                <td class="text-danger fw-bold"><?= money($exp['amount']) ?></td>
                                 <td><?= ucfirst($exp['payment_method']) ?></td>
                                 <td>
                                     <form method="post" style="display:inline" onsubmit="return confirm('Delete this expense?')">
@@ -234,7 +247,7 @@ $expense_categories = ['Rent', 'Utilities', 'Salary', 'Food Cost', 'Marketing', 
                         <tfoot>
                             <tr class="table-dark">
                                 <th colspan="3">Total Expenses</th>
-                                <th colspan="3"><?= $currency ?><?= number_format($total_expenses, 2) ?></th>
+                                <th colspan="3"><?= money($total_expenses) ?></th>
                             </tr>
                         </tfoot>
                     </table>

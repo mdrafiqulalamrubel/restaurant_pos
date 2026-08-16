@@ -209,7 +209,7 @@ $bookings_today = $today_bookings->fetchAll(PDO::FETCH_ASSOC);
                             <small class="text-muted"><?= $r['type_name'] ?></small>
                             <p class="mt-2 mb-1">
                                 <i class="fas fa-users"></i> Capacity: <?= $r['capacity'] ?> people<br>
-                                <i class="fas fa-clock"></i> â‚¬<?= number_format($r['price_per_hour'], 2) ?>/hour
+                                <i class="fas fa-clock"></i> â‚<?= money($r['price_per_hour']) ?>/hour
                             </p>
                             <div class="features small text-muted"><?= $r['features'] ?></div>
                         </div>
@@ -227,7 +227,7 @@ $bookings_today = $today_bookings->fetchAll(PDO::FETCH_ASSOC);
                 <div class="table-responsive">
                     <table class="table table-sm">
                         <thead>
-                            <tr><th>Time</th><th>Resource</th><th>Customer</th><th>Event</th><th>Guests</th><th>Status</th></tr>
+                            <tr><th>Time</th><th>Resource</th><th>Customer</th><th>Event</th><th>Guests</th><th>Status</th><th>Action</th></tr>
                         </thead>
                         <tbody>
                             <?php foreach ($bookings_today as $b): ?>

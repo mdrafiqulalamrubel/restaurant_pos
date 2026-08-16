@@ -1,7 +1,5 @@
 <?php
 require_once 'acc_core.php';
-require_once 'header.php';
-display_flash();
 if (($_SESSION['role'] ?? '') !== 'admin') { die('Access denied'); }
 $page_title = 'New Journal Entry';
 $db = db();
@@ -16,7 +14,7 @@ $custStmt = $db->prepare("SELECT id, name FROM customers ORDER BY name");
 $custStmt->execute([]);
 $customers = $custStmt->fetchAll();
 
-$suppStmt = $db->prepare("SELECT id, name FROM suppliers ORDER BY name");
+$suppStmt = $db->prepare("SELECT id, name FROM manufacturers ORDER BY name");
 $suppStmt->execute([]);
 $suppliers = $suppStmt->fetchAll();
 
@@ -64,84 +62,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-
+require_once 'header.php';
+display_flash();
 ?>
-<div class="card">
+<div class="card form-card" style="padding:20px;">
+    <h3 style="margin-top:0; margin-bottom:20px;">New Journal Entry</h3>
     <form method="post" id="journalForm">
         <div style="display:flex;gap:15px;margin-bottom:20px;">
             <div class="form-group" style="flex:1;">
-                <label>Date</label>
-                <input type="date" name="date" value="<?= date('Y-m-d') ?>" required>
+                <label class="form-label">Date</label>
+                <input type="date" name="date" class="form-control" value="<?= date('Y-m-d') ?>" required>
             </div>
             <div class="form-group" style="flex:1;">
-                <label>Reference</label>
-                <input type="text" name="reference" placeholder="e.g. ADJ-001">
+                <label class="form-label">Reference</label>
+                <input type="text" name="reference" class="form-control" placeholder="e.g. ADJ-001">
             </div>
             <div class="form-group" style="flex:2;">
-                <label>Description</label>
-                <input type="text" name="description" placeholder="Brief explanation">
+                <label class="form-label">Description</label>
+                <input type="text" name="description" class="form-control" placeholder="Brief explanation">
             </div>
         </div>
         
         <div style="display:flex;gap:15px;margin-bottom:20px;">
             <div class="form-group" style="flex:1;">
-                <label>Contact Type (Optional)</label>
-                <select name="contact_type" id="contact_type" onchange="toggleContactLists()">
+                <label class="form-label">Contact Type (Optional)</label>
+                <select name="contact_type" id="contact_type" class="form-select" onchange="toggleContactLists()">
                     <option value="">-- None --</option>
                     <option value="customer">Customer</option>
                     <option value="supplier">Supplier</option>
                 </select>
             </div>
             <div class="form-group" style="flex:2;" id="contact_div" style="display:none;">
-                <label>Contact</label>
-                <select name="contact_id" id="contact_id">
+                <label class="form-label">Contact</label>
+                <select name="contact_id" id="contact_id" class="form-select">
                     <option value="">-- Select Contact --</option>
                 </select>
             </div>
         </div>
 
-        <table style="width:100%; border-collapse: collapse; margin-bottom: 20px;">
-            <thead>
-                <tr style="background:#f3f4f6; text-align:left;">
-                    <th style="padding:10px;">Account</th>
-                    <th style="padding:10px; width:150px;">Debit</th>
-                    <th style="padding:10px; width:150px;">Credit</th>
-                    <th style="padding:10px; width:50px;"></th>
-                </tr>
-            </thead>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th style="padding:10px;">Account</th>
+                        <th style="padding:10px; width:150px;">Debit</th>
+                        <th style="padding:10px; width:150px;">Credit</th>
+                        <th style="padding:10px; width:50px;"></th>
+                    </tr>
+                </thead>
             <tbody id="journalLines">
                 <!-- Two initial rows -->
                 <tr>
-                    <td style="padding:5px;">
-                        <select name="account_id[]" class="acc-select" required>
+                    <td style="vertical-align:middle;">
+                        <select name="account_id[]" class="form-select form-select-sm acc-select" required>
                             <option value="">-- Select Account --</option>
                             <?php foreach($accounts as $a): ?>
                                 <option value="<?= $a['id'] ?>"><?= h($a['code']) ?> - <?= h($a['name']) ?> (<?= h($a['type']) ?>)</option>
                             <?php endforeach; ?>
                         </select>
                     </td>
-                    <td style="padding:5px;"><input type="number" step="0.01" name="debit[]" class="dr-input" oninput="calcTotals()"></td>
-                    <td style="padding:5px;"><input type="number" step="0.01" name="credit[]" class="cr-input" oninput="calcTotals()"></td>
-                    <td style="padding:5px;"></td>
+                    <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm dr-input" oninput="calcTotals()"></td>
+                    <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm cr-input" oninput="calcTotals()"></td>
+                    <td></td>
                 </tr>
                 <tr>
-                    <td style="padding:5px;">
-                        <select name="account_id[]" class="acc-select" required>
+                    <td style="vertical-align:middle;">
+                        <select name="account_id[]" class="form-select form-select-sm acc-select" required>
                             <option value="">-- Select Account --</option>
                             <?php foreach($accounts as $a): ?>
                                 <option value="<?= $a['id'] ?>"><?= h($a['code']) ?> - <?= h($a['name']) ?> (<?= h($a['type']) ?>)</option>
                             <?php endforeach; ?>
                         </select>
                     </td>
-                    <td style="padding:5px;"><input type="number" step="0.01" name="debit[]" class="dr-input" oninput="calcTotals()"></td>
-                    <td style="padding:5px;"><input type="number" step="0.01" name="credit[]" class="cr-input" oninput="calcTotals()"></td>
-                    <td style="padding:5px;"></td>
+                    <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm dr-input" oninput="calcTotals()"></td>
+                    <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm cr-input" oninput="calcTotals()"></td>
+                    <td></td>
                 </tr>
             </tbody>
-            <tfoot>
+            <tfoot class="table-light">
                 <tr>
                     <td style="padding:10px;">
-                        <button type="button" class="btn btn-outline btn-sm" onclick="addRow()">+ Add Line</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addRow()">+ Add Line</button>
                     </td>
                     <td style="padding:10px; font-weight:bold; font-size:16px;" id="totDr">0.00</td>
                     <td style="padding:10px; font-weight:bold; font-size:16px;" id="totCr">0.00</td>
@@ -149,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </tr>
             </tfoot>
         </table>
+        </div>
 
         <div style="display:flex;justify-content:flex-end;gap:10px;">
             <a href="acc_journal.php" class="btn btn-outline">Cancel</a>
@@ -162,17 +164,17 @@ function addRow() {
     const tbody = document.getElementById('journalLines');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td style="padding:5px;">
-            <select name="account_id[]" class="acc-select" required>
+        <td style="vertical-align:middle;">
+            <select name="account_id[]" class="form-select form-select-sm acc-select" required>
                 <option value="">-- Select Account --</option>
                 <?php foreach($accounts as $a): ?>
                     <option value="<?= $a['id'] ?>"><?= h($a['code']) ?> - <?= h($a['name']) ?> (<?= h($a['type']) ?>)</option>
                 <?php endforeach; ?>
             </select>
         </td>
-        <td style="padding:5px;"><input type="number" step="0.01" name="debit[]" class="dr-input" oninput="calcTotals()"></td>
-        <td style="padding:5px;"><input type="number" step="0.01" name="credit[]" class="cr-input" oninput="calcTotals()"></td>
-        <td style="padding:5px;"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove();calcTotals();">X</button></td>
+        <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm dr-input" oninput="calcTotals()"></td>
+        <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm cr-input" oninput="calcTotals()"></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove();calcTotals();">X</button></td>
     `;
     tbody.appendChild(tr);
 }

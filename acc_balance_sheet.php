@@ -82,62 +82,68 @@ foreach($equity as $e) $tot_equity += $e['bal'];
     </form>
 </div>
 
-<div class="card" style="padding:30px; max-width:800px; margin:0 auto; position:relative;">
-    <button onclick="window.print()" class="btn btn-outline btn-sm no-print" style="position:absolute; top:20px; right:20px;">🖨️ Print</button>
+<div class="card form-card" style="padding:30px; max-width:800px; margin:0 auto; position:relative;">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print" style="position:absolute; top:20px; right:20px;">🖨️ Print</button>
     <h2 style="text-align:center; margin-top:0;">Balance Sheet</h2>
     <p style="text-align:center; color:#666; margin-bottom:30px;">As of: <?= fmt_date($end_date) ?></p>
 
-    <div style="display:flex; gap:40px; flex-wrap:wrap;">
+    <div class="row">
         <!-- Left Side: Assets -->
-        <div style="flex:1; min-width:300px;">
+        <div class="col-md-6 mb-4">
             <h3 style="border-bottom:2px solid #ddd; padding-bottom:10px; color:#0284c7;">Assets</h3>
-            <table style="width:100%; border-collapse:collapse;">
-                <?php foreach($assets as $a): ?>
-                <tr>
-                    <td style="padding:8px 0;"><?= h($a['name']) ?></td>
-                    <td style="text-align:right; padding:8px 0;"><?= money($a['bal']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-                <tr>
-                    <td style="padding:15px 0; font-weight:bold; font-size:16px;">Total Assets</td>
-                    <td style="text-align:right; font-weight:bold; font-size:16px; border-top:2px solid #ddd; border-bottom:4px double #000;"><?= money($tot_assets) ?></td>
-                </tr>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <?php foreach($assets as $a): ?>
+                    <tr>
+                        <td style="padding:8px 0;"><?= h($a['name']) ?></td>
+                        <td style="text-align:right; padding:8px 0;"><?= money($a['bal']) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <tr>
+                        <td style="padding:15px 0; font-weight:bold; font-size:16px;">Total Assets</td>
+                        <td style="text-align:right; font-weight:bold; font-size:16px; border-top:2px solid #ddd; border-bottom:4px double #000;"><?= money($tot_assets) ?></td>
+                    </tr>
+                </table>
+            </div>
         </div>
 
         <!-- Right Side: Liabilities & Equity -->
-        <div style="flex:1; min-width:300px;">
+        <div class="col-md-6 mb-4">
             <h3 style="border-bottom:2px solid #ddd; padding-bottom:10px; color:#dc2626;">Liabilities</h3>
-            <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
-                <?php foreach($liabilities as $l): ?>
-                <tr>
-                    <td style="padding:8px 0;"><?= h($l['name']) ?></td>
-                    <td style="text-align:right; padding:8px 0;"><?= money($l['bal']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-                <tr>
-                    <td style="padding:10px 0; font-weight:bold;">Total Liabilities</td>
-                    <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_liabilities) ?></td>
-                </tr>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover mb-4">
+                    <?php foreach($liabilities as $l): ?>
+                    <tr>
+                        <td style="padding:8px 0;"><?= h($l['name']) ?></td>
+                        <td style="text-align:right; padding:8px 0;"><?= money($l['bal']) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <tr>
+                        <td style="padding:10px 0; font-weight:bold;">Total Liabilities</td>
+                        <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_liabilities) ?></td>
+                    </tr>
+                </table>
+            </div>
 
             <h3 style="border-bottom:2px solid #ddd; padding-bottom:10px; color:#059669;">Equity</h3>
-            <table style="width:100%; border-collapse:collapse;">
-                <?php foreach($equity as $e): ?>
-                <tr>
-                    <td style="padding:8px 0;"><?= h($e['name']) ?></td>
-                    <td style="text-align:right; padding:8px 0;"><?= money($e['bal']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-                <tr>
-                    <td style="padding:10px 0; font-weight:bold;">Total Equity</td>
-                    <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_equity) ?></td>
-                </tr>
-                <tr>
-                    <td style="padding:15px 0; font-weight:bold; font-size:16px;">Total Liabilities & Equity</td>
-                    <td style="text-align:right; font-weight:bold; font-size:16px; border-top:2px solid #ddd; border-bottom:4px double #000;"><?= money($tot_liabilities + $tot_equity) ?></td>
-                </tr>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <?php foreach($equity as $e): ?>
+                    <tr>
+                        <td style="padding:8px 0;"><?= h($e['name']) ?></td>
+                        <td style="text-align:right; padding:8px 0;"><?= money($e['bal']) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <tr>
+                        <td style="padding:10px 0; font-weight:bold;">Total Equity</td>
+                        <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_equity) ?></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:15px 0; font-weight:bold; font-size:16px;">Total Liabilities & Equity</td>
+                        <td style="text-align:right; font-weight:bold; font-size:16px; border-top:2px solid #ddd; border-bottom:4px double #000;"><?= money($tot_liabilities + $tot_equity) ?></td>
+                    </tr>
+                </table>
+            </div>
         </div>
     </div>
 </div>

@@ -130,7 +130,7 @@ $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge bg-primary"><?= $sale['item_count'] ?> items</span>
                         </div>
                         <div class="col-md-2">
-                            <strong>$<?= number_format($sale['total'], 2) ?></strong>
+                            <strong><?= money($sale['total']) ?></strong>
                             <br><small><?= ucfirst($sale['payment_method']) ?></small>
                         </div>
                         <div class="col-md-3">

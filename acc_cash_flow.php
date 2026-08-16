@@ -64,47 +64,53 @@ $net_cash = $tot_in - $tot_out;
         <button type="submit" class="btn btn-primary">Generate Report</button>
     </form>
 </div>
-<div class="card" style="padding:30px; max-width:800px; margin:0 auto; position:relative;">
-    <button onclick="window.print()" class="btn btn-outline btn-sm no-print" style="position:absolute; top:20px; right:20px; z-index: 10;">🖨️ Print</button>
+<div class="card form-card" style="padding:30px; max-width:800px; margin:0 auto; position:relative;">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print" style="position:absolute; top:20px; right:20px;">🖨️ Print</button>
     <h2 style="text-align:center; margin-top:0;">Cash Flow Statement</h2>
     <p style="text-align:center; color:#666; margin-bottom:30px;">For the period: <?= fmt_date($start_date) ?> to <?= fmt_date($end_date) ?></p>
 
     <h3 style="color:#059669; border-bottom:2px solid #ddd; padding-bottom:5px;">Cash Inflows (Receipts)</h3>
-    <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
-        <?php foreach($cash_in as $c): ?>
-        <tr>
-            <td style="padding:8px 0;"><?= fmt_date($c['date']) ?> - <?= h($c['description']) ?> (<?= h($c['reference']) ?>)</td>
-            <td style="text-align:right; padding:8px 0;"><?= money($c['amount']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <?php if(empty($cash_in)): ?><tr><td colspan="2" style="padding:8px 0; color:#999;">No cash inflows.</td></tr><?php endif; ?>
-        <tr>
-            <td style="padding:10px 0; font-weight:bold;">Total Cash Inflow</td>
-            <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_in) ?></td>
-        </tr>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-hover mb-4">
+            <?php foreach($cash_in as $c): ?>
+            <tr>
+                <td style="padding:8px 0;"><?= fmt_date($c['date']) ?> - <?= h($c['description']) ?> (<?= h($c['reference']) ?>)</td>
+                <td style="text-align:right; padding:8px 0;"><?= money($c['amount']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            <?php if(empty($cash_in)): ?><tr><td colspan="2" style="padding:8px 0; color:#999;">No cash inflows.</td></tr><?php endif; ?>
+            <tr>
+                <td style="padding:10px 0; font-weight:bold;">Total Cash Inflow</td>
+                <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_in) ?></td>
+            </tr>
+        </table>
+    </div>
 
     <h3 style="color:#dc2626; border-bottom:2px solid #ddd; padding-bottom:5px;">Cash Outflows (Payments)</h3>
-    <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
-        <?php foreach($cash_out as $c): ?>
-        <tr>
-            <td style="padding:8px 0;"><?= fmt_date($c['date']) ?> - <?= h($c['description']) ?> (<?= h($c['reference']) ?>)</td>
-            <td style="text-align:right; padding:8px 0;"><?= money($c['amount']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <?php if(empty($cash_out)): ?><tr><td colspan="2" style="padding:8px 0; color:#999;">No cash outflows.</td></tr><?php endif; ?>
-        <tr>
-            <td style="padding:10px 0; font-weight:bold;">Total Cash Outflow</td>
-            <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_out) ?></td>
-        </tr>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-hover mb-4">
+            <?php foreach($cash_out as $c): ?>
+            <tr>
+                <td style="padding:8px 0;"><?= fmt_date($c['date']) ?> - <?= h($c['description']) ?> (<?= h($c['reference']) ?>)</td>
+                <td style="text-align:right; padding:8px 0;"><?= money($c['amount']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            <?php if(empty($cash_out)): ?><tr><td colspan="2" style="padding:8px 0; color:#999;">No cash outflows.</td></tr><?php endif; ?>
+            <tr>
+                <td style="padding:10px 0; font-weight:bold;">Total Cash Outflow</td>
+                <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_out) ?></td>
+            </tr>
+        </table>
+    </div>
 
-    <table style="width:100%; border-collapse:collapse; margin-top:30px;">
-        <tr style="background:<?= $net_cash >= 0 ? '#ecfdf5' : '#fef2f2' ?>;">
-            <td style="padding:20px 10px; font-weight:bold; font-size:18px;">Net Cash Flow</td>
-            <td style="text-align:right; padding:20px 10px; font-weight:bold; font-size:18px; color:<?= $net_cash >= 0 ? '#059669' : '#dc2626' ?>; border-bottom:4px double <?= $net_cash >= 0 ? '#059669' : '#dc2626' ?>;"><?= money($net_cash) ?></td>
-        </tr>
-    </table>
+    <div class="table-responsive mt-4">
+        <table class="table">
+            <tr style="background:<?= $net_cash >= 0 ? '#ecfdf5' : '#fef2f2' ?>;">
+                <td style="padding:20px 10px; font-weight:bold; font-size:18px;">Net Cash Flow</td>
+                <td style="text-align:right; padding:20px 10px; font-weight:bold; font-size:18px; color:<?= $net_cash >= 0 ? '#059669' : '#dc2626' ?>; border-bottom:4px double <?= $net_cash >= 0 ? '#059669' : '#dc2626' ?>;"><?= money($net_cash) ?></td>
+            </tr>
+        </table>
+    </div>
 </div>
 
 <?php

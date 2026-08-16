@@ -56,12 +56,13 @@ $gross_profit = $sales - $cogs;
     </form>
 </div>
 
-<div class="card" style="padding:30px; max-width:600px; margin:0 auto; position:relative;">
-    <button onclick="window.print()" class="btn btn-outline btn-sm no-print" style="position:absolute; top:20px; right:20px;">🖨️ Print</button>
+<div class="card form-card" style="padding:30px; max-width:600px; margin:0 auto; position:relative;">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print" style="position:absolute; top:20px; right:20px;">🖨️ Print</button>
     <h2 style="text-align:center; margin-top:0;">Trading Account</h2>
     <p style="text-align:center; color:#666; margin-bottom:30px;">For the period: <?= fmt_date($start_date) ?> to <?= fmt_date($end_date) ?></p>
 
-    <table style="width:100%; border-collapse:collapse; font-size:16px;">
+    <div class="table-responsive">
+        <table class="table table-hover">
         <tr>
             <td style="padding:10px 0;">Sales Revenue</td>
             <td style="text-align:right; padding:10px 0;"><?= money($sales) ?></td>
@@ -75,6 +76,7 @@ $gross_profit = $sales - $cogs;
             <td style="text-align:right; padding:20px 10px; font-weight:bold; font-size:18px; color:<?= $gross_profit >= 0 ? '#059669' : '#dc2626' ?>; border-bottom:4px double <?= $gross_profit >= 0 ? '#059669' : '#dc2626' ?>;"><?= money($gross_profit) ?></td>
         </tr>
     </table>
+    </div>
 </div>
 
 <?php

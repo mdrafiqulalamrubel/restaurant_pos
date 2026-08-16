@@ -155,7 +155,7 @@ if (!$show_all && !$is_admin && $current_branch_id) {
     <div class="col-md-4">
         <div class="stats-card">
             <i class="fas fa-chart-line fa-2x"></i>
-            <h2><?= number_format($total_sales, 2) ?></h2>
+            <h2><?= money($total_sales) ?></h2>
             <div>Total Sales</div>
             <small><?= $from_date ?> to <?= $to_date ?></small>
         </div>
@@ -171,7 +171,7 @@ if (!$show_all && !$is_admin && $current_branch_id) {
     <div class="col-md-4">
         <div class="stats-card">
             <i class="fas fa-calculator fa-2x"></i>
-            <h2><?= number_format($avg_sale, 2) ?></h2>
+            <h2><?= money($avg_sale) ?></h2>
             <div>Average Sale Value</div>
             <small>Per transaction</small>
         </div>
@@ -215,10 +215,10 @@ if (!$show_all && !$is_admin && $current_branch_id) {
                         </td>
                         <td><?= htmlspecialchars($t['customer_name'] ?? 'Walk-in') ?></td>
                         <td><?= $t['item_count'] ?></td>
-                        <td><?= number_format($t['subtotal'] ?? 0, 2) ?></td>
-                        <td><?= number_format($t['discount'] ?? 0, 2) ?></td>
-                        <td><?= number_format($t['tax'] ?? 0, 2) ?></td>
-                        <td class="fw-bold"><?= number_format($t['total'], 2) ?></td>
+                        <td><?= money($t['subtotal'] ?? 0) ?></td>
+                        <td><?= money($t['discount'] ?? 0) ?></td>
+                        <td><?= money($t['tax'] ?? 0) ?></td>
+                        <td class="fw-bold"><?= money($t['total']) ?></td>
                         <td>
                             <?php
                             $method = $t['payment_method'] ?? 'cash';
@@ -250,7 +250,7 @@ if (!$show_all && !$is_admin && $current_branch_id) {
                 <tfoot class="table-dark">
                     <tr>
                         <th colspan="8" class="text-end">Grand Total:</th>
-                        <th><?= number_format($total_sales, 2) ?></th>
+                        <th><?= money($total_sales) ?></th>
                         <th colspan="2"></th>
                     </tr>
                 </tfoot>

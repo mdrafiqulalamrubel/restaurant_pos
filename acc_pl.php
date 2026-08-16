@@ -99,69 +99,71 @@ $net_profit = $gross_profit - $tot_exp;
     </form>
 </div>
 
-<div class="card" style="padding:30px; max-width:800px; margin:0 auto; position:relative;">
-    <button onclick="window.print()" class="btn btn-outline btn-sm no-print" style="position:absolute; top:20px; right:20px;">🖨️ Print</button>
+<div class="card form-card" style="padding:30px; max-width:800px; margin:0 auto; position:relative;">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print" style="position:absolute; top:20px; right:20px;">🖨️ Print</button>
     <h2 style="text-align:center; margin-top:0;">Profit & Loss Statement</h2>
     <p style="text-align:center; color:#666; margin-bottom:30px;">For the period: <?= fmt_date($start_date) ?> to <?= fmt_date($end_date) ?></p>
 
-    <table style="width:100%; border-collapse:collapse; font-size:15px;">
-        <!-- REVENUE -->
-        <tr>
-            <td colspan="2" style="font-weight:bold; font-size:16px; padding:10px 0; border-bottom:2px solid #ddd; color:#0284c7;">Revenues</td>
-        </tr>
-        <?php foreach($revenues as $r): ?>
-        <tr>
-            <td style="padding:8px 0; padding-left:20px;"><?= h($r['name']) ?></td>
-            <td style="text-align:right; padding:8px 0;"><?= money($r['bal']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <tr>
-            <td style="padding:10px 0; font-weight:bold;">Total Revenue</td>
-            <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_rev) ?></td>
-        </tr>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <!-- REVENUE -->
+            <tr>
+                <td colspan="2" style="font-weight:bold; font-size:16px; padding:10px 0; border-bottom:2px solid #ddd; color:#0284c7;">Revenues</td>
+            </tr>
+            <?php foreach($revenues as $r): ?>
+            <tr>
+                <td style="padding:8px 0; padding-left:20px;"><?= h($r['name']) ?></td>
+                <td style="text-align:right; padding:8px 0;"><?= money($r['bal']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            <tr>
+                <td style="padding:10px 0; font-weight:bold;">Total Revenue</td>
+                <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_rev) ?></td>
+            </tr>
 
-        <!-- COGS -->
-        <tr>
-            <td colspan="2" style="font-weight:bold; font-size:16px; padding:10px 0; border-bottom:2px solid #ddd; color:#ea580c; margin-top:20px;">Cost of Goods Sold (COGS)</td>
-        </tr>
-        <?php foreach($cogs_list as $e): ?>
-        <tr>
-            <td style="padding:8px 0; padding-left:20px;"><?= h($e['name']) ?></td>
-            <td style="text-align:right; padding:8px 0;"><?= money($e['bal']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <tr>
-            <td style="padding:10px 0; font-weight:bold;">Total COGS</td>
-            <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_cogs) ?></td>
-        </tr>
+            <!-- COGS -->
+            <tr>
+                <td colspan="2" style="font-weight:bold; font-size:16px; padding:10px 0; border-bottom:2px solid #ddd; color:#ea580c; margin-top:20px;">Cost of Goods Sold (COGS)</td>
+            </tr>
+            <?php foreach($cogs_list as $e): ?>
+            <tr>
+                <td style="padding:8px 0; padding-left:20px;"><?= h($e['name']) ?></td>
+                <td style="text-align:right; padding:8px 0;"><?= money($e['bal']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            <tr>
+                <td style="padding:10px 0; font-weight:bold;">Total COGS</td>
+                <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_cogs) ?></td>
+            </tr>
 
-        <!-- GROSS PROFIT -->
-        <tr style="background:#f0f9ff;">
-            <td style="padding:15px 10px; font-weight:bold; font-size:16px;">Gross Profit</td>
-            <td style="text-align:right; padding:15px 10px; font-weight:bold; font-size:16px; color:<?= $gross_profit >= 0 ? 'green' : 'red' ?>"><?= money($gross_profit) ?></td>
-        </tr>
+            <!-- GROSS PROFIT -->
+            <tr style="background:#f0f9ff;">
+                <td style="padding:15px 10px; font-weight:bold; font-size:16px;">Gross Profit</td>
+                <td style="text-align:right; padding:15px 10px; font-weight:bold; font-size:16px; color:<?= $gross_profit >= 0 ? 'green' : 'red' ?>"><?= money($gross_profit) ?></td>
+            </tr>
 
-        <!-- OPERATING EXPENSES -->
-        <tr>
-            <td colspan="2" style="font-weight:bold; font-size:16px; padding:10px 0; border-bottom:2px solid #ddd; color:#dc2626; margin-top:20px;">Operating Expenses</td>
-        </tr>
-        <?php foreach($exp_list as $e): ?>
-        <tr>
-            <td style="padding:8px 0; padding-left:20px;"><?= h($e['name']) ?></td>
-            <td style="text-align:right; padding:8px 0;"><?= money($e['bal']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <tr>
-            <td style="padding:10px 0; font-weight:bold;">Total Operating Expenses</td>
-            <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_exp) ?></td>
-        </tr>
+            <!-- OPERATING EXPENSES -->
+            <tr>
+                <td colspan="2" style="font-weight:bold; font-size:16px; padding:10px 0; border-bottom:2px solid #ddd; color:#dc2626; margin-top:20px;">Operating Expenses</td>
+            </tr>
+            <?php foreach($exp_list as $e): ?>
+            <tr>
+                <td style="padding:8px 0; padding-left:20px;"><?= h($e['name']) ?></td>
+                <td style="text-align:right; padding:8px 0;"><?= money($e['bal']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            <tr>
+                <td style="padding:10px 0; font-weight:bold;">Total Operating Expenses</td>
+                <td style="text-align:right; font-weight:bold; border-top:1px solid #ddd;"><?= money($tot_exp) ?></td>
+            </tr>
 
-        <!-- NET PROFIT -->
-        <tr style="background:<?= $net_profit >= 0 ? '#ecfdf5' : '#fef2f2' ?>;">
-            <td style="padding:20px 10px; font-weight:bold; font-size:18px;">Net Profit (Loss)</td>
-            <td style="text-align:right; padding:20px 10px; font-weight:bold; font-size:18px; color:<?= $net_profit >= 0 ? '#059669' : '#dc2626' ?>; border-bottom:4px double <?= $net_profit >= 0 ? '#059669' : '#dc2626' ?>;"><?= money($net_profit) ?></td>
-        </tr>
-    </table>
+            <!-- NET PROFIT -->
+            <tr style="background:<?= $net_profit >= 0 ? '#ecfdf5' : '#fef2f2' ?>;">
+                <td style="padding:20px 10px; font-weight:bold; font-size:18px;">Net Profit (Loss)</td>
+                <td style="text-align:right; padding:20px 10px; font-weight:bold; font-size:18px; color:<?= $net_profit >= 0 ? '#059669' : '#dc2626' ?>; border-bottom:4px double <?= $net_profit >= 0 ? '#059669' : '#dc2626' ?>;"><?= money($net_profit) ?></td>
+            </tr>
+        </table>
+    </div>
 </div>
 
 <?php

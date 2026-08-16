@@ -89,7 +89,7 @@ $closing_balance = $opening_balance + ($sales_data['total'] ?? 0) - ($expense_da
                 <h6>Cash Income</h6>
                 <div class="d-flex justify-content-between">
                     <span>Cash Sales:</span>
-                    <strong><?= $settings['currency'] ?? '€' ?><?= number_format($sales_data['total'] ?? 0, 2) ?></strong>
+                    <strong><?= money($sales_data['total'] ?? 0) ?></strong>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span>Number of Cash Transactions:</span>
@@ -101,7 +101,7 @@ $closing_balance = $opening_balance + ($sales_data['total'] ?? 0) - ($expense_da
                 <h6>Cash Expenses</h6>
                 <div class="d-flex justify-content-between">
                     <span>Total Expenses (Cash):</span>
-                    <strong class="text-danger"><?= $settings['currency'] ?? '€' ?><?= number_format($expense_data['total'] ?? 0, 2) ?></strong>
+                    <strong class="text-danger"><?= money($expense_data['total'] ?? 0) ?></strong>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span>Number of Expense Transactions:</span>
@@ -113,15 +113,15 @@ $closing_balance = $opening_balance + ($sales_data['total'] ?? 0) - ($expense_da
                 <h6>Other Payments Received</h6>
                 <div class="d-flex justify-content-between">
                     <span>Card Payments:</span>
-                    <strong><?= $settings['currency'] ?? '€' ?><?= number_format($card_total ?? 0, 2) ?></strong>
+                    <strong><?= money($card_total ?? 0) ?></strong>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span>bKash Payments:</span>
-                    <strong><?= $settings['currency'] ?? '€' ?><?= number_format($bkash_total ?? 0, 2) ?></strong>
+                    <strong><?= money($bkash_total ?? 0) ?></strong>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span>Nagad Payments:</span>
-                    <strong><?= $settings['currency'] ?? '€' ?><?= number_format($nagad_total ?? 0, 2) ?></strong>
+                    <strong><?= money($nagad_total ?? 0) ?></strong>
                 </div>
             </div>
             
@@ -129,20 +129,20 @@ $closing_balance = $opening_balance + ($sales_data['total'] ?? 0) - ($expense_da
                 <h5>Cash Balance Summary</h5>
                 <div class="d-flex justify-content-between">
                     <span>Opening Balance:</span>
-                    <strong><?= $settings['currency'] ?? '€' ?><?= number_format($opening_balance, 2) ?></strong>
+                    <strong><?= money($opening_balance) ?></strong>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span>Cash Received:</span>
-                    <strong>+ <?= $settings['currency'] ?? '€' ?><?= number_format($sales_data['total'] ?? 0, 2) ?></strong>
+                    <strong>+ <?= money($sales_data['total'] ?? 0) ?></strong>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span>Cash Paid Out:</span>
-                    <strong>- <?= $settings['currency'] ?? '€' ?><?= number_format($expense_data['total'] ?? 0, 2) ?></strong>
+                    <strong>- <?= money($expense_data['total'] ?? 0) ?></strong>
                 </div>
                 <hr style="background:white">
                 <div class="d-flex justify-content-between" style="font-size: 1.3rem;">
                     <span><strong>Closing Balance:</strong></span>
-                    <span><strong><?= $settings['currency'] ?? '€' ?><?= number_format($closing_balance, 2) ?></strong></span>
+                    <span><strong><?= money($closing_balance) ?></strong></span>
                 </div>
             </div>
             

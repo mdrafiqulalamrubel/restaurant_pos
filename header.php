@@ -318,8 +318,30 @@ if (isset($_GET['change_branch']) && is_numeric($_GET['change_branch'])) {
                     <i class="fas fa-building"></i> <span>Suppliers</span>
                 </a>
             </div>
+            <div class="nav-item">
+                <a href="purchases.php" class="nav-link <?= $current_page == 'purchases.php' ? 'active' : '' ?>">
+                    <i class="fas fa-shopping-cart"></i> <span>Purchases</span>
+                </a>
+            </div>
         </div>
         
+        <div class="nav-section" onclick="toggleSection(this)">
+            <span><i class="fas fa-industry"></i> MANUFACTURING</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="nav-section-content">
+            <div class="nav-item">
+                <a href="recipes.php" class="nav-link <?= $current_page == 'recipes.php' ? 'active' : '' ?>">
+                    <i class="fas fa-clipboard-list"></i> <span>Recipes</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="production.php" class="nav-link <?= $current_page == 'production.php' ? 'active' : '' ?>">
+                    <i class="fas fa-hammer"></i> <span>Production</span>
+                </a>
+            </div>
+        </div>
+
         <div class="nav-section" onclick="toggleSection(this)">
             <span><i class="fas fa-users"></i> CUSTOMERS</span>
             <i class="fas fa-chevron-down toggle-icon"></i>
@@ -439,6 +461,11 @@ if (isset($_GET['change_branch']) && is_numeric($_GET['change_branch'])) {
                 </a>
             </div>
             <div class="nav-item">
+                <a href="purchases.php" class="nav-link <?= $current_page == 'purchases.php' ? 'active' : '' ?>">
+                    <i class="fas fa-shopping-cart"></i> <span>All Purchases</span>
+                </a>
+            </div>
+            <div class="nav-item">
                 <a href="reports.php" class="nav-link <?= $current_page == 'reports.php' ? 'active' : '' ?>">
                     <i class="fas fa-chart-line"></i> <span>Reports</span>
                 </a>
@@ -464,6 +491,28 @@ if (isset($_GET['change_branch']) && is_numeric($_GET['change_branch'])) {
             </div>
         </div>
         <?php endif; ?>
+        
+        <div class="nav-section" onclick="toggleSection(this)">
+            <span><i class="fas fa-undo"></i> RETURNS</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="nav-section-content">
+            <div class="nav-item">
+                <a href="sales_returns.php" class="nav-link <?= $current_page == 'sales_returns.php' ? 'active' : '' ?>">
+                    <i class="fas fa-undo-alt"></i> <span>Sales Returns</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="purchase_returns.php" class="nav-link <?= $current_page == 'purchase_returns.php' ? 'active' : '' ?>">
+                    <i class="fas fa-undo-alt"></i> <span>Purchase Returns</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="returns_report.php" class="nav-link <?= $current_page == 'returns_report.php' ? 'active' : '' ?>">
+                    <i class="fas fa-file-invoice-dollar"></i> <span>Returns Report</span>
+                </a>
+            </div>
+        </div>
         
         <div class="nav-section" onclick="toggleSection(this)">
             <span><i class="fas fa-cog"></i> SETTINGS</span>

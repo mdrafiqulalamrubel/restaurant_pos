@@ -124,7 +124,7 @@ if (isset($_GET['edit'])) {
                                 <td><?= htmlspecialchars($s['phone'] ?? '-') ?></td>
                                 <td><?= $s['item_count'] ?></td>
                                 <td class="<?= ($s['opening_balance'] ?? 0) > 0 ? 'balance-positive' : 'balance-negative' ?>">
-                                    â‚¬<?= number_format($s['opening_balance'] ?? 0, 2) ?>
+                                    â‚<?= money($s['opening_balance'] ?? 0) ?>
                                 </td>
                                 <td>
                                     <a href="?edit=<?= $s['id'] ?>" class="btn btn-sm btn-warning">

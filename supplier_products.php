@@ -34,7 +34,7 @@ $items = $products->fetchAll(PDO::FETCH_ASSOC);
                     <?php endif; ?>
                     <div class="card-body">
                         <h6><?= htmlspecialchars($item['name']) ?></h6>
-                        <p class="text-primary">â‚¬<?= number_format($item['unit_price'], 2) ?></p>
+                        <p class="text-primary">â‚<?= money($item['unit_price']) ?></p>
                     </div>
                 </div>
             </div>

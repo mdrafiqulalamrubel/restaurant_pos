@@ -4,6 +4,9 @@ $page_icon = 'money-bill-wave';
 require_once 'config.php';
 require_once 'header.php';
 
+require_once 'acc_core.php';
+require_once 'accounting.php';
+
 // Handle cash transactions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $type = $_POST['transaction_type'];
@@ -13,6 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $stmt = $pdo->prepare("INSERT INTO cash_transactions (transaction_type, amount, category, description, transaction_date, created_by) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([$type, $amount, $category, $description, date('Y-m-d'), $_SESSION['user_id']]);
+    $tx_id = $pdo->lastInsertId();
+    
+    // Record in accounting system
+    acc_record_cash_transaction($tx_id, $type, $amount, $description);
     
     $success = "Transaction recorded successfully!";
 }
@@ -20,10 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Then include header
 require_once 'header.php';
 
-// Get cash balance
+// Get true cash balance from accounting system
+$cash_account = acc_get_account_by_code('1000');
+$cash_balance = $cash_account ? acc_get_account_balance($cash_account['id']) : 0;
+
 $income = $pdo->query("SELECT COALESCE(SUM(amount), 0) FROM cash_transactions WHERE transaction_type IN ('income', 'deposit')")->fetchColumn();
 $expenses = $pdo->query("SELECT COALESCE(SUM(amount), 0) FROM cash_transactions WHERE transaction_type IN ('expense', 'withdraw')")->fetchColumn();
-$cash_balance = $income - $expenses;
 
 // Get recent transactions
 $transactions = $pdo->query("SELECT * FROM cash_transactions ORDER BY created_at DESC LIMIT 50")->fetchAll();

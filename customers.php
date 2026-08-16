@@ -61,13 +61,13 @@ $total_customers = count($customers);
     <div class="col-md-4">
         <div class="stats-card">
             <h6>Total Due Amount</h6>
-            <h2>â‚¬<?= number_format($total_due, 2) ?></h2>
+            <h2>â‚<?= money($total_due) ?></h2>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stats-card">
             <h6>Average Due</h6>
-            <h2>â‚¬<?= number_format($total_customers > 0 ? $total_due / $total_customers : 0, 2) ?></h2>
+            <h2>â‚<?= money($total_customers > 0 ? $total_due / $total_customers : 0) ?></h2>
         </div>
     </div>
 </div>
@@ -115,10 +115,10 @@ $total_customers = count($customers);
                         <td><strong><?= htmlspecialchars($c['name']) ?></strong></td>
                         <td><?= htmlspecialchars($c['phone'] ?? '-') ?></td>
                         <td><?= htmlspecialchars($c['email'] ?? '-') ?></td>
-                        <td>â‚¬<?= number_format($total_spent, 2) ?></td>
+                        <td>â‚<?= money($total_spent) ?></td>
                         <td>
                             <?php if (($c['due_amount'] ?? 0) > 0): ?>
-                                <span class="due-badge">Due: â‚¬<?= number_format($c['due_amount'], 2) ?></span>
+                                <span class="due-badge">Due: â‚<?= money($c['due_amount']) ?></span>
                             <?php else: ?>
                                 <span class="text-success">â‚¬0.00</span>
                             <?php endif; ?>

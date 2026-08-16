@@ -69,6 +69,7 @@ require_once 'header.php';
 
 $recipes = $pdo->query("SELECT r.*, COUNT(ri.id) as ingredient_count FROM recipes r LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id GROUP BY r.id ORDER BY r.name")->fetchAll();
 $raw_materials = $pdo->query("SELECT id, name, unit, unit_price FROM raw_materials ORDER BY name")->fetchAll();
+$items = $pdo->query("SELECT id, name FROM items WHERE is_producible = 1 ORDER BY name")->fetchAll();
 ?>
 
 <style>

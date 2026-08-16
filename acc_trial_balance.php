@@ -40,13 +40,13 @@ $total_credit = 0;
     </form>
 </div>
 
-<div class="card" style="padding:0">
-    <div style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+<div class="card form-card" style="padding:20px;">
+    <div style="border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
         <h3 style="margin:0;">Trial Balance as of <?= h($end_date) ?></h3>
         <button onclick="window.print()" class="btn btn-outline no-print">🖨️ Print Report</button>
     </div>
-    <div class="table-wrap">
-        <table>
+    <div class="table-responsive">
+        <table class="table table-hover table-striped">
             <thead>
                 <tr>
                     <th>Account Code</th>

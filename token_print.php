@@ -114,6 +114,11 @@ $subtotal = array_sum(array_map(function($item) {
 $tax = $sale['tax'] ?? ($subtotal * 0.10);
 $total = $sale['total'];
 
+// Calculate total item count
+$total_item_count = array_sum(array_map(function($item) {
+    return $item['qty'];
+}, $order_items));
+
 // Update token status to printed
 $stmt = $pdo->prepare("UPDATE order_tokens SET status = 'printed', printed_at = NOW() WHERE sale_id = ? AND token_date = ?");
 $stmt->execute([$sale_id, $today]);
@@ -131,10 +136,26 @@ $stmt->execute([$sale_id, $today]);
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         @media print {
-            body { margin: 0; padding: 0; background: white; }
+            @page { size: 80mm auto; margin: 0mm; }
+            body { margin: 0; padding: 0; background: white; width: 80mm; font-family: 'Courier New', 'Lucida Console', monospace; font-size: 12px; color: #000; }
             .no-print { display: none !important; }
-            .token-card { box-shadow: none; border: 1px solid #ddd; page-break-after: avoid; }
-            .kitchen-token, .customer-token { page-break-after: avoid; }
+            .token-container { max-width: 80mm; margin: 0 auto; padding: 5px; }
+            .kitchen-token, .customer-token { 
+                box-shadow: none; border: none !important; padding: 0 !important; margin: 0 0 10px 0 !important; 
+                page-break-after: always; width: 100%; border-radius: 0; background: transparent;
+            }
+            .token-header { border-bottom: 1px dashed #000; margin-bottom: 5px; padding-bottom: 5px; }
+            .restaurant-name { color: #000 !important; font-size: 16px !important; }
+            .token-type { color: #000 !important; font-size: 12px !important; font-weight: bold; }
+            .token-number { color: #000 !important; font-size: 24px !important; letter-spacing: 2px; margin: 5px 0; }
+            .info-row { font-size: 12px !important; color: #000 !important; }
+            .order-table th, .order-table td { color: #000 !important; padding: 2px 0; border-bottom: 1px dashed #000 !important; font-size: 12px !important; }
+            .order-table th { border-bottom: 2px solid #000 !important; background: transparent !important; }
+            .order-table tr { background: transparent !important; }
+            .footer-note { color: #000 !important; border-top: 1px dashed #000 !important; font-size: 10px !important; }
+            .barcode { background: transparent !important; padding: 5px 0; margin: 5px 0; }
+            .barcode-number { font-size: 12px !important; }
+            span[style*="background:#ff9800"] { background: transparent !important; color: #000 !important; border: 1px solid #000; }
         }
         
         body {
@@ -328,6 +349,13 @@ $stmt->execute([$sale_id, $today]);
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td class="text-right"><strong>Total Items:</strong></td>
+                        <td class="text-center"><strong><?= $total_item_count ?></strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
             
             <div class="footer-note">
@@ -381,28 +409,32 @@ $stmt->execute([$sale_id, $today]);
                     <tr>
                         <td><?= htmlspecialchars($item['name']) ?></td>
                         <td class="text-center"><?= $item['qty'] ?></td>
-                        <td class="text-right"><?= $currency ?><?= number_format($item['unit_price'] * $item['qty'], 2) ?></td>
+                        <td class="text-right"><?= money($item['unit_price'] * $item['qty']) ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
                 <tfoot>
                     <tr>
+                        <td colspan="2" class="text-right" style="border-top: 1px solid #ddd; padding-top: 5px;"><strong>Total Items:</strong></td>
+                        <td class="text-right" style="border-top: 1px solid #ddd; padding-top: 5px;"><strong><?= $total_item_count ?></strong></td>
+                    </tr>
+                    <tr>
                         <td colspan="2" class="text-right"><strong>Subtotal:</strong></td>
-                        <td class="text-right"><?= $currency ?><?= number_format($subtotal, 2) ?></td>
+                        <td class="text-right"><?= money($subtotal) ?></td>
                     </tr>
                     <?php if ($sale['discount'] > 0): ?>
                     <tr>
                         <td colspan="2" class="text-right"><strong>Discount:</strong></td>
-                        <td class="text-right">-<?= $currency ?><?= number_format($sale['discount'], 2) ?></td>
+                        <td class="text-right">-<?= money($sale['discount']) ?></td>
                     </tr>
                     <?php endif; ?>
                     <tr>
                         <td colspan="2" class="text-right"><strong>Tax:</strong></td>
-                        <td class="text-right"><?= $currency ?><?= number_format($tax, 2) ?></td>
+                        <td class="text-right"><?= money($tax) ?></td>
                     </tr>
                     <tr style="border-top: 2px solid #ddd;">
                         <td colspan="2" class="text-right"><strong>TOTAL:</strong></td>
-                        <td class="text-right"><strong><?= $currency ?><?= number_format($total, 2) ?></strong></td>
+                        <td class="text-right"><strong><?= money($total) ?></strong></td>
                     </tr>
                 </tfoot>
             </table>

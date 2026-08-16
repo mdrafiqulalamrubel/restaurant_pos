@@ -26,7 +26,7 @@ $sales = $transactions->fetchAll(PDO::FETCH_ASSOC);
     <div class="card-header">
         <h5><i class="fas fa-user"></i> Transactions for: <?= htmlspecialchars($customer['name']) ?></h5>
         <p class="text-muted">Phone: <?= $customer['phone'] ?> | Email: <?= $customer['email'] ?></p>
-        <p>Due Amount: <strong class="text-danger">â‚¬<?= number_format($customer['due_amount'] ?? 0, 2) ?></strong></p>
+        <p>Due Amount: <strong class="text-danger">â‚<?= money($customer['due_amount'] ?? 0) ?></strong></p>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -40,7 +40,7 @@ $sales = $transactions->fetchAll(PDO::FETCH_ASSOC);
                         <td>#<?= $sale['id'] ?></td>
                         <td><?= date('Y-m-d H:i', strtotime($sale['created_at'])) ?></td>
                         <td><?= $sale['item_count'] ?></td>
-                        <td>â‚¬<?= number_format($sale['total'], 2) ?></td>
+                        <td>â‚<?= money($sale['total']) ?></td>
                         <td><?= ucfirst($sale['payment_method'] ?? 'cash') ?></td>
                         <td><a href="invoice.php?id=<?= $sale['id'] ?>" class="btn btn-sm btn-info">View</a></td>
                     </tr>

@@ -210,7 +210,12 @@ $low_stock_items = array_filter($items, function($item) {
     <!-- Items List Section -->
     <div class="col-md-8">
         <div class="form-card">
-            <h5><i class="fas fa-list"></i> Menu Items (<?= count($items) ?> items)</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><i class="fas fa-list"></i> Menu Items (<span id="itemCount"><?= count($items) ?></span> items)</h5>
+                <div style="width: 250px;">
+                    <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="🔍 Search items..." onkeyup="searchItems()">
+                </div>
+            </div>
             <?php if (!empty($low_stock_items)): ?>
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle"></i> 
@@ -219,21 +224,21 @@ $low_stock_items = array_filter($items, function($item) {
             <?php endif; ?>
             <div class="row">
                 <?php foreach ($items as $item): ?>
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-4 item-column">
                         <div class="card item-card">
                             <?php if ($item['image'] && file_exists($item['image'])): ?>
-                                <img src="<?= $item['image'] ?>" class="card-img-top item-image" alt="<?= $item['name'] ?>">
+                                <img src="<?= $item['image'] ?>" class="card-img-top item-image" alt="<?= htmlspecialchars($item['name']) ?>">
                             <?php else: ?>
                                 <div class="card-img-top item-image bg-secondary d-flex align-items-center justify-content-center">
                                     <i class="fas fa-utensils fa-3x text-white"></i>
                                 </div>
                             <?php endif; ?>
                             <div class="card-body">
-                                <h6 class="card-title"><?= htmlspecialchars($item['name']) ?></h6>
+                                <h6 class="card-title item-name-text"><?= htmlspecialchars($item['name']) ?></h6>
                                 <p class="card-text small text-muted"><?= htmlspecialchars($item['description'] ?? 'No description') ?></p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="text-primary fw-bold"><?= number_format($item['unit_price'], 2) ?></span>
-                                    <span class="badge bg-secondary"><?= $item['category'] ?? 'Uncategorized' ?></span>
+                                    <span class="badge bg-secondary"><?= htmlspecialchars($item['category'] ?? 'Uncategorized') ?></span>
                                 </div>
                                 <div class="mt-2">
                                     <small>Stock: <?= number_format($item['current_stock'], 2) ?></small>
@@ -263,5 +268,25 @@ $low_stock_items = array_filter($items, function($item) {
         </div>
     </div>
 </div>
+
+<script>
+function searchItems() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const columns = document.querySelectorAll('.item-column');
+    let count = 0;
+    
+    columns.forEach(col => {
+        const name = col.querySelector('.item-name-text').textContent.toLowerCase();
+        if (name.includes(input)) {
+            col.style.display = 'block';
+            count++;
+        } else {
+            col.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('itemCount').textContent = count;
+}
+</script>
 
 <?php require_once 'footer.php'; ?>

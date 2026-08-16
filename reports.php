@@ -1,258 +1,284 @@
 <?php
-$page_title = 'Dashboard';
-$page_icon = 'home';
+$page_title = 'Reports & Dashboard';
+$page_icon  = 'chart-bar';
 require_once 'config.php';
 require_once 'header.php';
 
-// Get company settings for currency
-$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
-if (!$company) {
-    $company = ['currency' => '€', 'currency_code' => 'EUR', 'tax_rate' => 10];
-}
-$currency = $company['currency'];
+$company  = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
+$currency = $company['currency'] ?? CURRENCY_SYMBOL;
 
-// Get dashboard stats
-$total_sales_today = $pdo->query("SELECT COALESCE(SUM(total),0) FROM sales WHERE DATE(created_at) = CURDATE()")->fetchColumn();
+// Stats
+$total_sales_today        = $pdo->query("SELECT COALESCE(SUM(total),0) FROM sales WHERE DATE(created_at) = CURDATE()")->fetchColumn();
 $total_transactions_today = $pdo->query("SELECT COUNT(*) FROM sales WHERE DATE(created_at) = CURDATE()")->fetchColumn();
-$total_items = $pdo->query("SELECT COUNT(*) FROM items WHERE active=1")->fetchColumn();
-$total_customers = $pdo->query("SELECT COUNT(*) FROM customers")->fetchColumn();
-$total_bookings = $pdo->query("SELECT COUNT(*) FROM bookings WHERE DATE(booking_date) >= CURDATE()")->fetchColumn();
+$total_purchases_today    = $pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM purchases WHERE DATE(purchase_date) = CURDATE()")->fetchColumn();
+$total_items              = $pdo->query("SELECT COUNT(*) FROM items WHERE active=1")->fetchColumn();
+$total_customers          = $pdo->query("SELECT COUNT(*) FROM customers")->fetchColumn();
+$total_bookings           = $pdo->query("SELECT COUNT(*) FROM bookings WHERE DATE(booking_date) >= CURDATE()")->fetchColumn();
 
-// Get monthly sales
+// Monthly sales
 $monthly_sales = $pdo->query("
-    SELECT DATE_FORMAT(created_at, '%Y-%m') as month, 
-           SUM(total) as total, 
-           COUNT(*) as count 
-    FROM sales 
-    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-    GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-    ORDER BY month DESC
+    SELECT DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total) as total, COUNT(*) as count
+    FROM sales WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+    GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Get recent sales
+// Monthly purchases
+$monthly_purchases_data = $pdo->query("
+    SELECT DATE_FORMAT(purchase_date, '%Y-%m') as month, SUM(total_amount) as total
+    FROM purchases WHERE purchase_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+    GROUP BY DATE_FORMAT(purchase_date, '%Y-%m') ORDER BY month DESC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Recent sales
 $recent_sales = $pdo->query("
-    SELECT s.*, c.name as customer_name 
-    FROM sales s 
-    LEFT JOIN customers c ON s.customer_id = c.id 
+    SELECT s.*, c.name as customer_name
+    FROM sales s LEFT JOIN customers c ON s.customer_id = c.id
     ORDER BY s.id DESC LIMIT 5
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Get upcoming bookings
-$upcoming_bookings = $pdo->query("
-    SELECT b.*, i.name as item_name 
-    FROM bookings b 
-    JOIN sale_items si ON b.sale_item_id = si.id 
-    JOIN items i ON si.item_id = i.id 
-    WHERE DATE(b.booking_date) >= CURDATE() 
-    ORDER BY b.booking_date ASC LIMIT 5
+// Recent purchases
+$recent_purchases_data = $pdo->query("
+    SELECT p.*, m.name as supplier_name
+    FROM purchases p LEFT JOIN manufacturers m ON p.supplier_id = m.id
+    ORDER BY p.id DESC LIMIT 5
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Get top selling items this month
+// Upcoming bookings
+$upcoming_bookings = $pdo->query("
+    SELECT b.*, res.name as resource_name
+    FROM reservations b
+    LEFT JOIN resources res ON b.resource_id = res.id
+    WHERE DATE(b.booking_date) >= CURDATE()
+    ORDER BY b.booking_date ASC, b.start_time ASC LIMIT 5
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Top selling items
 $top_items = $pdo->query("
     SELECT i.name, SUM(si.qty) as total_qty, SUM(si.qty * si.unit_price) as revenue
-    FROM sale_items si
-    JOIN items i ON si.item_id = i.id
-    JOIN sales s ON si.sale_id = s.id
+    FROM sale_items si JOIN items i ON si.item_id = i.id JOIN sales s ON si.sale_id = s.id
     WHERE MONTH(s.created_at) = MONTH(CURDATE()) AND YEAR(s.created_at) = YEAR(CURDATE())
-    GROUP BY si.item_id
-    ORDER BY revenue DESC
-    LIMIT 5
+    GROUP BY si.item_id ORDER BY revenue DESC LIMIT 6
 ")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <style>
     .stats-card {
-        background: white;
-        border-radius: 15px;
+        border-radius: 16px;
         padding: 20px;
         margin-bottom: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        transition: transform 0.3s;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+        transition: transform 0.25s, box-shadow 0.25s;
         position: relative;
         overflow: hidden;
+        color: white;
     }
-    .stats-card:hover {
-        transform: translateY(-5px);
-    }
-    .stats-icon {
-        font-size: 2.5rem;
-        float: right;
-        opacity: 0.3;
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-    .stats-number {
-        font-size: 2rem;
-        font-weight: bold;
-        color: #667eea;
-    }
-    .stats-label {
-        color: #666;
-        margin-top: 10px;
-        font-size: 0.9rem;
-    }
-    .dashboard-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .chart-container {
-        max-height: 300px;
-        margin: 20px 0;
-    }
+    .stats-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.18); }
+    .stats-icon { font-size: 3rem; opacity: 0.18; position: absolute; right: 18px; top: 50%; transform: translateY(-50%); }
+    .stats-number { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+    .stats-label  { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.85; margin-top: 4px; }
+    .stats-sub    { font-size: 0.78rem; opacity: 0.75; margin-top: 2px; }
+
+    .dash-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+    .dash-card h5 { font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #555; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f3f3f3; }
+    .dash-card h5 i { margin-right: 8px; }
+
+    .table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: #999; font-weight: 700; border-top: none; padding: 8px 10px; }
+    .table td  { font-size: 0.875rem; padding: 8px 10px; vertical-align: middle; }
+    .table-hover tbody tr:hover { background-color: #f9f9ff; }
+
+    .top-item-box { background: #f8f9fa; border-radius: 10px; padding: 12px 8px; text-align: center; height: 100%; transition: background 0.2s; }
+    .top-item-box:hover { background: #eef0ff; }
+    .top-item-box .item-name    { font-size: 0.78rem; font-weight: 600; margin-top: 5px; line-height: 1.2; }
+    .top-item-box .item-revenue { font-size: 0.85rem; font-weight: 700; color: #667eea; }
+    .top-item-box .item-qty     { font-size: 0.7rem; color: #aaa; }
+
+    .booking-badge { background: #f0f7ff; border-left: 3px solid #4facfe; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; }
 </style>
 
+<!-- Stat Cards -->
 <div class="row">
-    <div class="col-md-3">
-        <div class="stats-card">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stats-card" style="background: linear-gradient(135deg,#667eea,#764ba2);">
             <i class="fas fa-chart-line stats-icon"></i>
-            <div class="stats-number"><?= $currency ?><?= number_format($total_sales_today, 2) ?></div>
+            <div class="stats-number"><?= money($total_sales_today) ?></div>
             <div class="stats-label">Today's Sales</div>
-            <small><?= $total_transactions_today ?> transactions</small>
+            <div class="stats-sub"><?= $total_transactions_today ?> txns</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stats-card">
-            <i class="fas fa-utensils stats-icon"></i>
-            <div class="stats-number"><?= $total_items ?></div>
-            <div class="stats-label">Menu Items</div>
-            <small>Active products</small>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stats-card" style="background: linear-gradient(135deg,#f5576c,#f093fb);">
+            <i class="fas fa-shopping-cart stats-icon"></i>
+            <div class="stats-number"><?= money($total_purchases_today) ?></div>
+            <div class="stats-label">Today's Purchases</div>
+            <div class="stats-sub">Materials &amp; stock</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stats-card">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stats-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);">
+            <i class="fas fa-money-bill-wave stats-icon"></i>
+            <div class="stats-number"><?= money($total_sales_today - $total_purchases_today) ?></div>
+            <div class="stats-label">Today's Profit</div>
+            <div class="stats-sub">Sales − Purchases</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stats-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);">
             <i class="fas fa-users stats-icon"></i>
             <div class="stats-number"><?= $total_customers ?></div>
             <div class="stats-label">Customers</div>
-            <small>Registered</small>
+            <div class="stats-sub">Registered</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stats-card">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stats-card" style="background: linear-gradient(135deg,#fa709a,#fee140);">
+            <i class="fas fa-utensils stats-icon"></i>
+            <div class="stats-number"><?= $total_items ?></div>
+            <div class="stats-label">Menu Items</div>
+            <div class="stats-sub">Active</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stats-card" style="background: linear-gradient(135deg,#a18cd1,#fbc2eb);">
             <i class="fas fa-calendar stats-icon"></i>
             <div class="stats-number"><?= $total_bookings ?></div>
-            <div class="stats-label">Upcoming Bookings</div>
-            <small>Pending reservations</small>
+            <div class="stats-label">Bookings</div>
+            <div class="stats-sub">Upcoming</div>
         </div>
     </div>
 </div>
 
+<!-- Chart -->
 <div class="row">
-    <div class="col-md-8">
-        <div class="dashboard-card">
-            <h5><i class="fas fa-chart-line"></i> Monthly Sales Overview</h5>
-            <div class="chart-container">
-                <canvas id="salesChart"></canvas>
-            </div>
+    <div class="col-12">
+        <div class="dash-card">
+            <h5><i class="fas fa-chart-bar text-primary"></i> Monthly Sales &amp; Purchases Overview</h5>
+            <canvas id="salesChart" height="80"></canvas>
         </div>
-        
-        <div class="dashboard-card">
-            <h5><i class="fas fa-clock"></i> Recent Transactions</h5>
+    </div>
+</div>
+
+<!-- Recent Transactions side by side -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="dash-card">
+            <h5><i class="fas fa-receipt text-success"></i> Recent Sales</h5>
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Invoice #</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Payment</th>
-                            <th>Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Invoice</th><th>Customer</th><th>Total</th><th>Time</th><th></th></tr></thead>
                     <tbody>
-                        <?php foreach ($recent_sales as $sale): ?>
+                        <?php if (empty($recent_sales)): ?>
+                            <tr><td colspan="5" class="text-center text-muted py-4">No recent sales</td></tr>
+                        <?php else: foreach ($recent_sales as $sale): ?>
                         <tr>
-                            <td><a href="invoice.php?id=<?= $sale['id'] ?>">#<?= $sale['id'] ?></a></td>
+                            <td><a href="invoice.php?id=<?= $sale['id'] ?>" class="fw-bold text-decoration-none">#<?= $sale['id'] ?></a></td>
                             <td><?= htmlspecialchars($sale['customer_name'] ?? 'Walk-in') ?></td>
-                            <td class="fw-bold"><?= $currency ?><?= number_format($sale['total'], 2) ?></td>
-                            <td><?= ucfirst($sale['payment_method'] ?? 'cash') ?></td>
-                            <td><?= date('H:i', strtotime($sale['created_at'])) ?></td>
-                            <td><a href="invoice.php?id=<?= $sale['id'] ?>" class="btn btn-sm btn-info">View</a></td>
+                            <td class="fw-bold text-success"><?= money($sale['total']) ?></td>
+                            <td class="text-muted"><?= date('H:i', strtotime($sale['created_at'])) ?></td>
+                            <td><a href="invoice.php?id=<?= $sale['id'] ?>" class="btn btn-sm btn-outline-primary py-0">View</a></td>
                         </tr>
-                        <?php endforeach; ?>
+                        <?php endforeach; endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="dashboard-card">
-            <h5><i class="fas fa-calendar"></i> Upcoming Bookings</h5>
-            <?php if (empty($upcoming_bookings)): ?>
-                <p class="text-muted text-center">No upcoming bookings</p>
+
+    <div class="col-lg-6">
+        <div class="dash-card">
+            <h5><i class="fas fa-shopping-cart text-danger"></i> Recent Purchases</h5>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Invoice</th><th>Supplier</th><th>Total</th><th>Date</th><th></th></tr></thead>
+                    <tbody>
+                        <?php if (empty($recent_purchases_data)): ?>
+                            <tr><td colspan="5" class="text-center text-muted py-4">No recent purchases</td></tr>
+                        <?php else: foreach ($recent_purchases_data as $p): ?>
+                        <tr>
+                            <td><a href="purchase_invoice.php?id=<?= $p['id'] ?>" class="fw-bold text-decoration-none">PUR-<?= str_pad($p['id'], 4, '0', STR_PAD_LEFT) ?></a></td>
+                            <td><?= htmlspecialchars($p['supplier_name'] ?? 'N/A') ?></td>
+                            <td class="fw-bold text-danger"><?= money($p['total_amount']) ?></td>
+                            <td class="text-muted"><?= date('M d', strtotime($p['purchase_date'])) ?></td>
+                            <td><a href="purchase_invoice.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-outline-primary py-0">View</a></td>
+                        </tr>
+                        <?php endforeach; endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Items + Upcoming Bookings -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="dash-card">
+            <h5><i class="fas fa-trophy text-warning"></i> Top Selling Items — This Month</h5>
+            <?php if (empty($top_items)): ?>
+                <p class="text-muted text-center py-3">No sales this month yet</p>
             <?php else: ?>
-                <?php foreach ($upcoming_bookings as $booking): ?>
-                <div class="alert alert-info mb-2">
-                    <strong><?= htmlspecialchars($booking['item_name']) ?></strong><br>
-                    <small><i class="fas fa-calendar"></i> <?= $booking['booking_date'] ?> at <?= $booking['booking_time'] ?></small><br>
-                    <small><?= $booking['duration'] ?> hour(s)</small>
+            <div class="row g-2">
+                <?php foreach ($top_items as $idx => $item): ?>
+                <div class="col-6 col-sm-4 col-md-4">
+                    <div class="top-item-box">
+                        <span class="badge bg-<?= $idx==0?'warning':($idx==1?'secondary':($idx==2?'info':'light text-dark')) ?>">#<?= $idx+1 ?></span>
+                        <div class="item-name"><?= htmlspecialchars($item['name']) ?></div>
+                        <div class="item-qty"><?= $item['total_qty'] ?> sold</div>
+                        <div class="item-revenue"><?= money($item['revenue']) ?></div>
+                    </div>
                 </div>
                 <?php endforeach; ?>
+            </div>
             <?php endif; ?>
         </div>
-        
-        <div class="dashboard-card">
-            <h5><i class="fas fa-trophy"></i> Top Selling Items (This Month)</h5>
-            <?php if (empty($top_items)): ?>
-                <p class="text-muted text-center">No sales data</p>
-            <?php else: ?>
-                <?php foreach ($top_items as $index => $item): ?>
-                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                    <div>
-                        <span class="badge bg-<?= $index == 0 ? 'warning' : ($index == 1 ? 'secondary' : 'info') ?> me-2">#<?= $index + 1 ?></span>
-                        <strong><?= htmlspecialchars($item['name']) ?></strong>
-                    </div>
-                    <div class="text-end">
-                        <small><?= $item['total_qty'] ?> sold</small><br>
-                        <small class="text-primary"><?= $currency ?><?= number_format($item['revenue'], 2) ?></small>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="dash-card">
+            <h5><i class="fas fa-calendar-alt text-info"></i> Upcoming Bookings</h5>
+            <?php if (empty($upcoming_bookings)): ?>
+                <p class="text-muted text-center py-3">No upcoming bookings</p>
+            <?php else: foreach ($upcoming_bookings as $b): ?>
+            <div class="booking-badge">
+                <div class="fw-bold small"><?= htmlspecialchars($b['resource_name'] ?? 'Booking') ?></div>
+                <div class="text-muted" style="font-size:0.78rem;"><i class="fas fa-clock me-1"></i><?= date('M d', strtotime($b['booking_date'])) ?> at <?= date('H:i', strtotime($b['start_time'])) ?></div>
+            </div>
+            <?php endforeach; endif; ?>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Monthly Sales Chart
-const ctx = document.getElementById('salesChart').getContext('2d');
-const monthlyData = <?= json_encode(array_reverse($monthly_sales)) ?>;
+const salesData = <?= json_encode(array_reverse($monthly_sales)) ?>;
+const purchData = <?= json_encode(array_reverse($monthly_purchases_data)) ?>;
+const allMonths = [...new Set([...salesData.map(i => i.month), ...purchData.map(i => i.month)])].sort();
 
-new Chart(ctx, {
-    type: 'line',
+new Chart(document.getElementById('salesChart').getContext('2d'), {
+    type: 'bar',
     data: {
-        labels: monthlyData.map(item => item.month),
-        datasets: [{
-            label: 'Sales (<?= $currency ?>)',
-            data: monthlyData.map(item => parseFloat(item.total)),
-            borderColor: '#667eea',
-            backgroundColor: 'rgba(102,126,234,0.1)',
-            tension: 0.4,
-            fill: true
-        }]
+        labels: allMonths,
+        datasets: [
+            {
+                label: 'Sales',
+                data: allMonths.map(m => { let r = salesData.find(x => x.month===m); return r ? parseFloat(r.total) : 0; }),
+                backgroundColor: 'rgba(102,126,234,0.75)',
+                borderColor: '#667eea', borderWidth: 1, borderRadius: 5
+            },
+            {
+                label: 'Purchases',
+                data: allMonths.map(m => { let r = purchData.find(x => x.month===m); return r ? parseFloat(r.total) : 0; }),
+                backgroundColor: 'rgba(245,87,108,0.65)',
+                borderColor: '#f5576c', borderWidth: 1, borderRadius: 5
+            }
+        ]
     },
     options: {
         responsive: true,
-        maintainAspectRatio: true,
         plugins: {
-            legend: {
-                position: 'top',
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return '<?= $currency ?>' + context.raw.toFixed(2);
-                    }
-                }
-            }
-        }
+            legend: { position: 'top' },
+            tooltip: { callbacks: { label: c => '<?= CURRENCY_SYMBOL ?>' + c.raw.toFixed(2) } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '<?= CURRENCY_SYMBOL ?>' + v.toLocaleString() } } }
     }
 });
 </script>

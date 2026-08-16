@@ -32,12 +32,34 @@ function saveSale($items, $customer_id = 0, $payment_method = 'cash', $discount 
         $stmt->execute([$total, $customer_id ?: null, $payment_method, $discount, $tax, $paid_amount, $due_amount, $branch_id, $session_id]);
         $saleId = $pdo->lastInsertId();
 
+        $total_cogs = 0;
         foreach ($items as $item) {
             $stmt = $pdo->prepare("INSERT INTO sale_items (sale_id, item_id, qty, unit_price) VALUES (?,?,?,?)");
             $stmt->execute([$saleId, $item['id'], $item['qty'], $item['price']]);
             $saleItemId = $pdo->lastInsertId();
 
-            if (!empty($item['booking_required'])) {
+            // Calculate COGS
+            $item_stmt = $pdo->prepare("SELECT cost_price FROM items WHERE id = ?");
+            $item_stmt->execute([$item['id']]);
+            $cost_price = $item_stmt->fetchColumn() ?: 0;
+            $total_cogs += $cost_price * $item['qty'];
+
+            // Deduct stock if not a booking item
+            if (empty($item['booking_required'])) {
+                $stock_stmt = $pdo->prepare("SELECT current_stock, is_producible FROM items WHERE id = ? FOR UPDATE");
+                $stock_stmt->execute([$item['id']]);
+                $item_data = $stock_stmt->fetch(PDO::FETCH_ASSOC);
+                $current_stock = $item_data['current_stock'] ?: 0;
+                $is_producible = $item_data['is_producible'] ?? 0;
+                
+                // Block if insufficient stock AND not a producible item
+                if ($current_stock < $item['qty'] && empty($is_producible)) {
+                    throw new Exception("Insufficient stock for item ID: {$item['id']}");
+                }
+                
+                $upd_stmt = $pdo->prepare("UPDATE items SET current_stock = current_stock - ? WHERE id = ?");
+                $upd_stmt->execute([$item['qty'], $item['id']]);
+            } else {
                 $stmt = $pdo->prepare("INSERT INTO bookings (sale_item_id, booking_date, booking_time, duration, notes) VALUES (?,?,?,?,?)");
                 $stmt->execute([
                     $saleItemId,
@@ -48,6 +70,17 @@ function saveSale($items, $customer_id = 0, $payment_method = 'cash', $discount 
                 ]);
             }
         }
+        
+        // Record in accounting system
+        require_once 'acc_core.php';
+        require_once 'accounting.php';
+        $customer_name = '';
+        if ($customer_id) {
+            $c_stmt = $pdo->prepare("SELECT name FROM customers WHERE id = ?");
+            $c_stmt->execute([$customer_id]);
+            $customer_name = $c_stmt->fetchColumn() ?: '';
+        }
+        acc_record_sale($saleId, $total, $paid_amount, $payment_method, $customer_name, $total_cogs, $customer_id ?: null);
 
         $pdo->commit();
         return $saleId;

@@ -1,7 +1,5 @@
 <?php
 require_once 'acc_core.php';
-require_once 'header.php';
-display_flash();
 if (($_SESSION['role'] ?? '') !== 'admin') { die('Access denied'); } // Only admin should modify accounts ideally
 $page_title = 'Chart of Accounts';
 
@@ -140,7 +138,8 @@ foreach ($obStmt->fetchAll() as $row) {
     $obs[$row['account_id']] = ['dr' => $row['tot_dr'], 'cr' => $row['tot_cr']];
 }
 
-
+require_once 'header.php';
+display_flash();
 ?>
 <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
     <button onclick="openAccModal()" class="btn btn-primary">+ Add Account</button>

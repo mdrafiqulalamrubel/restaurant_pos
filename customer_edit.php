@@ -171,7 +171,7 @@ $currency = $company['currency'] ?? '€';
         <div class="info-card">
             <h6 class="mb-3"><i class="fas fa-chart-line"></i> Customer Statistics</h6>
             <div class="stat-box">
-                <div class="stat-number"><?= $currency ?><?= number_format($total_spent ?? 0, 2) ?></div>
+                <div class="stat-number"><?= money($total_spent ?? 0) ?></div>
                 <div class="text-muted">Total Spent</div>
             </div>
             <div class="stat-box">
@@ -181,7 +181,7 @@ $currency = $company['currency'] ?? '€';
             <div class="stat-box">
                 <div class="stat-number">
                     <?php if (($customer['due_amount'] ?? 0) > 0): ?>
-                        <span class="due-badge"><?= $currency ?><?= number_format($customer['due_amount'], 2) ?> Due</span>
+                        <span class="due-badge"><?= money($customer['due_amount']) ?> Due</span>
                     <?php else: ?>
                         <span class="paid-badge">Fully Paid</span>
                     <?php endif; ?>
@@ -259,7 +259,7 @@ $currency = $company['currency'] ?? '€';
                             <td><a href="invoice.php?id=<?= $sale['id'] ?>">#<?= $sale['id'] ?></a></td>
                             <td><?= date('d M Y', strtotime($sale['created_at'])) ?></td>
                             <td><?= $sale['item_count'] ?> items</td>
-                            <td><?= $currency ?><?= number_format($sale['total'], 2) ?></td>
+                            <td><?= money($sale['total']) ?></td>
                             <td><span class="badge bg-success">Completed</span></td>
                         </tr>
                         <?php endforeach; ?>

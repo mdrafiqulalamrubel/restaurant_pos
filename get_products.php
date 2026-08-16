@@ -2,7 +2,7 @@
 require_once 'config.php';
 header('Content-Type: application/json');
 
-$stmt = $pdo->query("SELECT id, name, unit_price as price, category, image, description, booking_required, booking_type FROM items WHERE active = 1 ORDER BY category, name");
+$stmt = $pdo->query("SELECT id, name, unit_price as price, category, image, description, booking_required, booking_type, current_stock, is_producible FROM items WHERE active = 1 ORDER BY category, name");
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($products as &$p) {

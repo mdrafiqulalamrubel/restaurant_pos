@@ -5,6 +5,12 @@ $page_icon = 'cash-register';
 require_once 'config.php';
 require_once 'functions.php';
 
+// Check authentication
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
 // Check for active session
 $stmt = $pdo->prepare("
     SELECT * FROM pos_sessions 
@@ -101,17 +107,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                         <p><strong>Payment:</strong> <?= ucfirst($payment_method) ?></p>
                     </div>
                     <div>
-                        <button class="btn btn-primary" onclick="printBill('thermal')">🖨️ Print Thermal</button>
-                        <button class="btn btn-secondary" onclick="printBill('a4')">🖨️ Print A4</button>
-                        <a href="pos.php" class="btn btn-success">💰 New Sale</a>
-                        <a href="invoice.php?id=<?= $saleId ?>" class="btn btn-secondary">📄 View Invoice</a>
+                        <button class="btn btn-warning" onclick="window.open('token_print.php?sale_id=<?= $saleId ?>&type=kitchen', '_blank', 'width=450,height=600')">🍳 Kitchen Token</button>
+                        <button class="btn btn-success" onclick="window.open('token_print.php?sale_id=<?= $saleId ?>&type=customer', '_blank', 'width=450,height=600')">🎫 Customer Token</button>
+                        <button class="btn btn-primary" onclick="printBill('thermal')">🖨️ Thermal Receipt</button>
+                        <button class="btn btn-secondary" onclick="printBill('a4')">🖨️ A4 Invoice</button>
+                        <a href="pos.php" class="btn btn-success">⏭️ Skip / New Sale</a>
                     </div>
                 </div>
                 <script>
                     function printBill(type = 'thermal') {
-                        window.open('print_bill.php?id=<?= $saleId ?>&type=' + type, '_blank', 'width=' + (type === 'thermal' ? '450' : '800') + ',height=600');
+                        if (type === 'a4') {
+                            window.open('invoice.php?id=<?= $saleId ?>&print=1', '_blank', 'width=1000,height=800');
+                        } else {
+                            window.open('print_bill.php?id=<?= $saleId ?>&type=thermal', '_blank', 'width=450,height=600');
+                        }
                     }
-                    setTimeout(function() { printBill('thermal'); }, 500);
                 </script>
             </body>
             </html>
@@ -178,10 +188,13 @@ if (!$company) {
 
 <div class="pos-layout">
     <div class="products-section">
+        <div class="mb-3 d-flex gap-2">
+            <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search items by name..." onkeyup="searchItems()">
+        </div>
         <div class="category-filter">
             <button type="button" class="category-btn active" data-category="all">🍽️ All Items</button>
             <?php foreach ($categories as $cat): ?>
-                <button type="button" class="category-btn" data-category="<?= $cat['category'] ?>"><?= $cat['category'] ?></button>
+                <button type="button" class="category-btn" data-category="<?= htmlspecialchars($cat['category']) ?>"><?= htmlspecialchars($cat['category']) ?></button>
             <?php endforeach; ?>
         </div>
         <div class="product-grid" id="productGrid"><div class="text-center">Loading products...</div></div>
@@ -259,7 +272,10 @@ function displayProducts(productsToShow) {
             ${p.booking_required ? '<div class="booking-badge">📅 Booking</div>' : ''}
             <img src="${p.image || 'uploads/items/default.jpg'}" class="product-image" onerror="this.src='uploads/items/default.jpg'">
             <div class="product-name"><strong>${escapeHtml(p.name)}</strong></div>
-            <div class="product-price">${parseFloat(p.price).toFixed(2)}</div>
+            <div class="product-price">
+                ${parseFloat(p.price).toFixed(2)} 
+                ${!p.booking_required ? `<span style="font-size: 0.8rem; color: ${p.current_stock > 0 ? '#28a745' : '#dc3545'}; margin-left: 5px;">(Stock: ${parseFloat(p.current_stock || 0).toFixed(0)})</span>` : ''}
+            </div>
             <small class="text-muted">${p.category || ''}</small>
         </div>
     `).join('');
@@ -269,21 +285,46 @@ document.querySelectorAll('.category-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
-        const category = this.dataset.category;
-        const filtered = category === 'all' ? products : products.filter(p => p.category === category);
-        displayProducts(filtered);
+        filterProducts();
     });
 });
+
+function searchItems() {
+    filterProducts();
+}
+
+function filterProducts() {
+    const categoryBtn = document.querySelector('.category-btn.active');
+    const category = categoryBtn ? categoryBtn.dataset.category : 'all';
+    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    
+    const filtered = products.filter(p => {
+        const matchCategory = category === 'all' || p.category === category;
+        const matchSearch = p.name.toLowerCase().includes(searchQuery);
+        return matchCategory && matchSearch;
+    });
+    displayProducts(filtered);
+}
 
 function addToCart(productId) {
     const product = products.find(p => p.id == productId);
     if (!product) return;
+    
     const existing = cart.find(i => i.id === productId);
-    if (existing) { existing.qty++; } 
+    const newQty = existing ? existing.qty + 1 : 1;
+    
+    // Check stock limit (booking items and producible items bypass this)
+    if (!product.booking_required && parseInt(product.is_producible) !== 1 && newQty > product.current_stock) {
+        alert("Not enough stock! Available: " + product.current_stock);
+        return;
+    }
+    
+    if (existing) { existing.qty = newQty; } 
     else {
         cart.push({
             id: product.id, name: product.name, price: parseFloat(product.price), qty: 1,
-            image: product.image, booking_required: product.booking_required,
+            image: product.image, booking_required: product.booking_required, current_stock: product.current_stock,
+            is_producible: parseInt(product.is_producible),
             bk_date: '', bk_time: '', bk_duration: 1
         });
     }
@@ -324,12 +365,28 @@ function renderCart() {
 }
 
 function changeQty(idx, delta) {
-    let newQty = cart[idx].qty + delta;
+    const item = cart[idx];
+    let newQty = item.qty + delta;
+    if (!item.booking_required && parseInt(item.is_producible) !== 1 && newQty > item.current_stock) {
+        alert("Not enough stock! Available: " + item.current_stock);
+        return;
+    }
+    
     if (newQty >= 0.5) { cart[idx].qty = newQty; renderCart(); }
     else if (newQty < 0.5 && delta < 0) { removeItem(idx); }
 }
 
-function setQty(idx, val) { cart[idx].qty = parseFloat(val) || 0; if (cart[idx].qty <= 0) removeItem(idx); else renderCart(); }
+function setQty(idx, val) { 
+    const item = cart[idx];
+    let newQty = parseFloat(val) || 0;
+    if (!item.booking_required && parseInt(item.is_producible) !== 1 && newQty > item.current_stock) {
+        alert("Not enough stock! Available: " + item.current_stock);
+        newQty = item.current_stock;
+    }
+    cart[idx].qty = newQty; 
+    if (cart[idx].qty <= 0) removeItem(idx); 
+    else renderCart(); 
+}
 function setBooking(idx, field, value) { if (field === 'date') cart[idx].bk_date = value; if (field === 'time') cart[idx].bk_time = value; }
 function removeItem(idx) { cart.splice(idx, 1); renderCart(); }
 

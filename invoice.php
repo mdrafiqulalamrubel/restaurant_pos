@@ -213,12 +213,65 @@ $total = $sale['total'];
         .invoice-wrapper {
             padding: 0;
             background: white;
+            min-height: auto;
         }
         .invoice-container {
             box-shadow: none;
+            max-width: 100%;
         }
         body {
             background: white;
+            font-size: 10px !important;
+        }
+        * {
+            font-size: 10px !important;
+            line-height: 1.2 !important;
+        }
+        .invoice-header {
+            padding: 10px 15px !important;
+            background: #fff !important;
+            color: #000 !important;
+            border-bottom: 2px solid #000;
+        }
+        .invoice-title {
+            font-size: 16px !important;
+            color: #000 !important;
+        }
+        .invoice-token {
+            position: static;
+            background: none;
+            padding: 0;
+            color: #000;
+        }
+        .invoice-body {
+            padding: 10px 15px !important;
+        }
+        .bill-to, .totals-section, .payment-info {
+            background: #fff !important;
+            padding: 5px !important;
+            border: 1px solid #ddd;
+            margin-bottom: 10px !important;
+        }
+        .bill-to h6 {
+            color: #000 !important;
+            margin-bottom: 5px !important;
+            font-weight: bold;
+        }
+        .items-table th {
+            background: #fff !important;
+            color: #000 !important;
+            padding: 4px !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        .items-table td {
+            padding: 4px !important;
+        }
+        .info-row {
+            margin-bottom: 2px !important;
+        }
+        h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0; }
+        .footer-note {
+            padding-top: 10px;
         }
     }
 </style>
@@ -310,8 +363,8 @@ $total = $sale['total'];
                             <?php endif; ?>
                         </td>
                         <td class="text-center"><?= $item['qty'] ?></td>
-                        <td class="text-end"><?= $currency ?><?= number_format($item['unit_price'], 2) ?></td>
-                        <td class="text-end"><?= $currency ?><?= number_format($item['qty'] * $item['unit_price'], 2) ?></td>
+                        <td class="text-end"><?= money($item['unit_price']) ?></td>
+                        <td class="text-end"><?= money($item['qty'] * $item['unit_price']) ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -321,21 +374,21 @@ $total = $sale['total'];
             <div class="totals-section">
                 <div class="totals-row">
                     <span>Subtotal:</span>
-                    <span><?= $currency ?><?= number_format($subtotal, 2) ?></span>
+                    <span><?= money($subtotal) ?></span>
                 </div>
                 <?php if ($discount > 0): ?>
                 <div class="totals-row">
                     <span>Discount:</span>
-                    <span>- <?= $currency ?><?= number_format($discount, 2) ?></span>
+                    <span>- <?= money($discount) ?></span>
                 </div>
                 <?php endif; ?>
                 <div class="totals-row">
                     <span>Tax (<?= $tax_rate ?>%):</span>
-                    <span><?= $currency ?><?= number_format($tax, 2) ?></span>
+                    <span><?= money($tax) ?></span>
                 </div>
                 <div class="totals-row grand-total">
                     <span>Grand Total:</span>
-                    <span><?= $currency ?><?= number_format($total, 2) ?></span>
+                    <span><?= money($total) ?></span>
                 </div>
             </div>
             
@@ -366,25 +419,26 @@ $total = $sale['total'];
 <!-- Floating Action Buttons -->
 <div class="action-buttons no-print">
     <button class="action-btn print" onclick="window.print()">
-        <i class="fas fa-print"></i> Print Invoice
+        <i class="fas fa-print"></i> A4 Print
     </button>
-    <a href="print_bill.php?id=<?= $id ?>&type=thermal" class="action-btn print" style="background: #ff9800;">
-        <i class="fas fa-receipt"></i> Thermal Receipt
-    </a>
+    <button class="action-btn print" style="background: #ff9800;" onclick="window.open('print_bill.php?id=<?= $id ?>&type=thermal', 'Print', 'width=450,height=600')">
+        <i class="fas fa-receipt"></i> Thermal Print
+    </button>
     <a href="pos.php" class="action-btn back">
         <i class="fas fa-cash-register"></i> New Sale
     </a>
     <a href="transactions.php" class="action-btn back" style="background: #6c757d;">
         <i class="fas fa-list"></i> All Sales
     </a>
-    <a href="token_print.php?sale_id=<?= $id ?>&type=both" class="btn btn-warning">
-        <i class="fas fa-ticket-alt"></i> Print Token
+    <a href="token_print.php?sale_id=<?= $id ?>&type=both" class="btn btn-warning" style="display:flex;align-items:center;border-radius:30px;padding:12px 24px;font-weight:600;color:#000;text-decoration:none;">
+        <i class="fas fa-ticket-alt me-2"></i> Print Token
     </a>
 </div>
 
 <script>
-    // Auto print option (optional)
-    // setTimeout(function() { window.print(); }, 1000);
+    <?php if (isset($_GET['print']) && $_GET['print'] == 1): ?>
+    setTimeout(function() { window.print(); }, 500);
+    <?php endif; ?>
 </script>
 
 <?php require_once 'footer.php'; ?>

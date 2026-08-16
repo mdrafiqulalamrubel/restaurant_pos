@@ -112,7 +112,7 @@ $completed_tokens = count(array_filter($token_list, function($t) { return $t['st
                         <strong>Items:</strong> <?= htmlspecialchars(substr($token['items'], 0, 50)) ?>...
                     </div>
                     <div class="small mt-1">
-                        <strong>Total:</strong> â‚¬<?= number_format($token['total'], 2) ?>
+                        <strong>Total:</strong> â‚<?= money($token['total']) ?>
                     </div>
                     <div class="small">
                         <strong>Payment:</strong> <?= ucfirst($token['payment_method']) ?>

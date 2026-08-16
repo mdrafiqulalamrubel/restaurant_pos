@@ -2,6 +2,9 @@
 // checkout.php - Process Checkout with session support
 require_once 'config.php';
 
+require_once 'acc_core.php';
+require_once 'accounting.php';
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: pos.php');
     exit;
@@ -35,9 +38,16 @@ try {
     $stmt->execute([$total, $customer_id ?: null, $payment_method, $discount, $tax, $session_id]);
     $sale_id = $pdo->lastInsertId();
     
+    $total_cogs = 0;
     foreach ($cart_data as $item) {
         $stmt = $pdo->prepare("INSERT INTO sale_items (sale_id, item_id, qty, unit_price) VALUES (?, ?, ?, ?)");
         $stmt->execute([$sale_id, $item['id'], $item['qty'], $item['price']]);
+        
+        // Calculate COGS
+        $item_stmt = $pdo->prepare("SELECT cost_price FROM items WHERE id = ?");
+        $item_stmt->execute([$item['id']]);
+        $cost_price = $item_stmt->fetchColumn() ?: 0;
+        $total_cogs += $cost_price * $item['qty'];
         
         if ($item['booking_required'] && !empty($item['bk_date'])) {
             $sale_item_id = $pdo->lastInsertId();
@@ -59,6 +69,16 @@ try {
     $token_num = $stmt->fetchColumn();
     $stmt = $pdo->prepare("INSERT INTO order_tokens (sale_id, token_number, token_date, status) VALUES (?, ?, ?, 'pending')");
     $stmt->execute([$sale_id, $token_num, $today]);
+    
+    // Record in accounting system
+    $customer_name = '';
+    if ($customer_id) {
+        $c_stmt = $pdo->prepare("SELECT name FROM customers WHERE id = ?");
+        $c_stmt->execute([$customer_id]);
+        $customer_name = $c_stmt->fetchColumn() ?: '';
+    }
+    // Assume full payment at POS checkout
+    acc_record_sale($sale_id, $total, $total, $payment_method, $customer_name, $total_cogs, $customer_id ?: null);
     
     $pdo->commit();
     
