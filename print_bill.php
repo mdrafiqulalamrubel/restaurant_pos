@@ -75,7 +75,11 @@ $branch_phone = $sale['branch_phone'] ?? '';
         @media print {
             body { margin: 0; padding: 0; }
             .no-print { display: none; }
+            <?php if ($print_type === 'a4'): ?>
+            @page { size: A4; margin: 15mm; }
+            <?php else: ?>
             @page { size: 80mm auto; margin: 0mm; }
+            <?php endif; ?>
         }
         
         body {
@@ -95,8 +99,16 @@ $branch_phone = $sale['branch_phone'] ?? '';
         }
         
         .receipt {
+            <?php if ($print_type === 'a4'): ?>
+            width: 100%;
+            max-width: 210mm;
+            padding: 20px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            <?php else: ?>
             width: 80mm;
             max-width: 80mm;
+            padding: 10px;
+            <?php endif; ?>
             margin: 0 auto;
             padding: 8px;
             background: white;

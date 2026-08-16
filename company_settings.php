@@ -51,9 +51,17 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS company_settings (
     currency_code VARCHAR(5) DEFAULT 'EUR',
     tax_rate DECIMAL(5,2) DEFAULT 10.00,
     receipt_footer TEXT,
+    fiscal_year_start DATE NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
+
+// Migrate to add fiscal_year_start if it doesn't exist (for existing tables)
+try {
+    $pdo->exec("ALTER TABLE company_settings ADD COLUMN fiscal_year_start DATE NULL DEFAULT NULL");
+} catch (PDOException $e) {
+    // Column already exists, ignore
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = $_POST['name'];
@@ -65,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currency_code = $_POST['currency_code'];
     $tax_rate = $_POST['tax_rate'];
     $receipt_footer = $_POST['receipt_footer'];
+    $fiscal_year_start = !empty($_POST['fiscal_year_start']) ? $_POST['fiscal_year_start'] : null;
     
     $logo_path = null;
     if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
@@ -79,11 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if ($logo_path) {
-        $stmt = $pdo->prepare("UPDATE company_settings SET name=?, address=?, phone=?, email=?, website=?, logo=?, currency=?, currency_code=?, tax_rate=?, receipt_footer=? WHERE id=1");
-        $stmt->execute([$name, $address, $phone, $email, $website, $logo_path, $currency, $currency_code, $tax_rate, $receipt_footer]);
+        $stmt = $pdo->prepare("UPDATE company_settings SET name=?, address=?, phone=?, email=?, website=?, logo=?, currency=?, currency_code=?, tax_rate=?, receipt_footer=?, fiscal_year_start=? WHERE id=1");
+        $stmt->execute([$name, $address, $phone, $email, $website, $logo_path, $currency, $currency_code, $tax_rate, $receipt_footer, $fiscal_year_start]);
     } else {
-        $stmt = $pdo->prepare("UPDATE company_settings SET name=?, address=?, phone=?, email=?, website=?, currency=?, currency_code=?, tax_rate=?, receipt_footer=? WHERE id=1");
-        $stmt->execute([$name, $address, $phone, $email, $website, $currency, $currency_code, $tax_rate, $receipt_footer]);
+        $stmt = $pdo->prepare("UPDATE company_settings SET name=?, address=?, phone=?, email=?, website=?, currency=?, currency_code=?, tax_rate=?, receipt_footer=?, fiscal_year_start=? WHERE id=1");
+        $stmt->execute([$name, $address, $phone, $email, $website, $currency, $currency_code, $tax_rate, $receipt_footer, $fiscal_year_start]);
     }
     
     $success = "Settings saved successfully!";
@@ -200,9 +209,15 @@ $currencies = [
                 </div>
             </div>
             
-            <div class="mb-3">
-                <label>Tax Rate (%)</label>
-                <input type="number" name="tax_rate" class="form-control" step="0.01" value="<?= $settings['tax_rate'] ?? 10 ?>">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label>Tax Rate (%)</label>
+                    <input type="number" name="tax_rate" class="form-control" step="0.01" value="<?= $settings['tax_rate'] ?? 10 ?>">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label>Fiscal Year Start</label>
+                    <input type="date" name="fiscal_year_start" class="form-control" value="<?= htmlspecialchars($settings['fiscal_year_start'] ?? '') ?>">
+                </div>
             </div>
             
             <div class="mb-3">

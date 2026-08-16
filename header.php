@@ -377,6 +377,58 @@ if (isset($_GET['change_branch']) && is_numeric($_GET['change_branch'])) {
         </div>
         
         <div class="nav-section" onclick="toggleSection(this)">
+            <span><i class="fas fa-book"></i> ACCOUNTING</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="nav-section-content">
+            <div class="nav-item">
+                <a href="acc_accounts.php" class="nav-link <?= $current_page == 'acc_accounts.php' ? 'active' : '' ?>">
+                    <i class="fas fa-university"></i> <span>Chart of Accounts</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="acc_opening_balances.php" class="nav-link <?= $current_page == 'acc_opening_balances.php' ? 'active' : '' ?>">
+                    <i class="fas fa-balance-scale"></i> <span>Opening Balances</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="acc_journal.php" class="nav-link <?= in_array($current_page, ['acc_journal.php', 'acc_journal_add.php']) ? 'active' : '' ?>">
+                    <i class="fas fa-book"></i> <span>Journal Entries</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="acc_ledger.php" class="nav-link <?= $current_page == 'acc_ledger.php' ? 'active' : '' ?>">
+                    <i class="fas fa-book-open"></i> <span>General Ledger</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="acc_trial_balance.php" class="nav-link <?= $current_page == 'acc_trial_balance.php' ? 'active' : '' ?>">
+                    <i class="fas fa-balance-scale"></i> <span>Trial Balance</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="acc_trading.php" class="nav-link <?= $current_page == 'acc_trading.php' ? 'active' : '' ?>">
+                    <i class="fas fa-exchange-alt"></i> <span>Trading Account</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="acc_pl.php" class="nav-link <?= $current_page == 'acc_pl.php' ? 'active' : '' ?>">
+                    <i class="fas fa-chart-line"></i> <span>Profit & Loss</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="acc_balance_sheet.php" class="nav-link <?= $current_page == 'acc_balance_sheet.php' ? 'active' : '' ?>">
+                    <i class="fas fa-file-invoice-dollar"></i> <span>Balance Sheet</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="acc_cash_flow.php" class="nav-link <?= $current_page == 'acc_cash_flow.php' ? 'active' : '' ?>">
+                    <i class="fas fa-money-bill-wave"></i> <span>Cash Flow</span>
+                </a>
+            </div>
+        </div>
+        
+        <div class="nav-section" onclick="toggleSection(this)">
             <span><i class="fas fa-receipt"></i> TRANSACTIONS</span>
             <i class="fas fa-chevron-down toggle-icon"></i>
         </div>

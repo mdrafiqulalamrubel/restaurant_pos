@@ -88,7 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
             <body>
                 <div class="top-bar">
                     <a href="pos.php" class="btn btn-success">🏠 Back to POS</a>
-                    <button class="btn btn-primary" onclick="printBill()">🖨️ Print Bill</button>
+                    <button class="btn btn-primary" onclick="printBill('thermal')">🖨️ Print Thermal</button>
+                    <button class="btn btn-secondary" onclick="printBill('a4')">🖨️ Print A4</button>
                 </div>
                 <div class="success-container">
                     <div class="success-icon">✅</div>
@@ -100,16 +101,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                         <p><strong>Payment:</strong> <?= ucfirst($payment_method) ?></p>
                     </div>
                     <div>
-                        <button class="btn btn-primary" onclick="printBill()">🖨️ Print Bill</button>
+                        <button class="btn btn-primary" onclick="printBill('thermal')">🖨️ Print Thermal</button>
+                        <button class="btn btn-secondary" onclick="printBill('a4')">🖨️ Print A4</button>
                         <a href="pos.php" class="btn btn-success">💰 New Sale</a>
                         <a href="invoice.php?id=<?= $saleId ?>" class="btn btn-secondary">📄 View Invoice</a>
                     </div>
                 </div>
                 <script>
-                    function printBill() {
-                        window.open('print_bill.php?id=<?= $saleId ?>&type=thermal', '_blank', 'width=450,height=600');
+                    function printBill(type = 'thermal') {
+                        window.open('print_bill.php?id=<?= $saleId ?>&type=' + type, '_blank', 'width=' + (type === 'thermal' ? '450' : '800') + ',height=600');
                     }
-                    setTimeout(function() { printBill(); }, 500);
+                    setTimeout(function() { printBill('thermal'); }, 500);
                 </script>
             </body>
             </html>
